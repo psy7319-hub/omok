@@ -186,6 +186,7 @@ tr.adv td{background:#e6f2ee}
 .homecard small{font-family:'Gowun Dodum';font-size:15px;color:var(--sub)}
 .homecard.main{border-color:var(--accent2)}
 .bigscore{font-family:'Jua';font-size:40px;color:var(--accent);margin:0 10px}
+.okbox{background:#e6f2ee;border:2px solid #b9dccf;border-radius:12px;padding:10px 14px;color:var(--accent2)!important}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:12px;z-index:70;font-family:'Jua'}
 </style>
 </head>
@@ -206,6 +207,7 @@ tr.adv td{background:#e6f2ee}
   <section id="homeView" class="hidden">
     <div class="home">
       <h2>⚫ 무엇을 할까요? ⚪</h2>
+      <div id="homeConn" class="connslot" style="max-width:640px;margin:-6px auto 14px"></div>
       <div class="homegrid">
         <button class="homecard main" id="hStudent"><span class="ic">🧒</span>대회 참가<small>선생님이 알려 준 참가 코드로 입장</small></button>
         <button class="homecard main" id="hFriend"><span class="ic">👫</span>친구랑 연습<small>태블릿 2대로 친구와 대국</small></button>
@@ -1379,16 +1381,42 @@ const DB = (() => {
   const api = { impl: local, ready: null, failed: false };
   ['now','on','get','set','remove','transaction'].forEach(k => api[k] = (...a) => api.impl[k](...a));
   Object.defineProperty(api, 'name', { get: () => api.impl.name });
+  // status: 'noconfig'(설정 없음) | 'checking' | 'ok' | 'failed'
+  api.status = 'checking'; api.reason = '';
+  const withTimeout = (p, ms, msg) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]);
   api.ready = (async () => {
     const cfg = window.FIREBASE_CONFIG;
-    if(cfg && cfg.databaseURL){
-      try{ await fb.init(cfg); api.impl = fb; }
-      catch(e){ api.failed = true; console.error(e); }
+    if(!cfg || !cfg.databaseURL){ api.status = 'noconfig'; return; }
+    if(/claude\.ai|claudeusercontent/.test(location.host)){ api.status = 'failed'; api.reason = 'claude'; return; }
+    try{ await withTimeout(fb.init(cfg), 10000, 'script'); }
+    catch(e){ api.status = 'failed'; api.reason = 'script'; console.error(e); return; }
+    try{
+      // 실제로 읽고 쓸 수 있는지 확인 (규칙을 게시했는지)
+      await withTimeout(fb.db.ref('rooms/_ping').set(Date.now()), 10000, 'timeout');
+      api.impl = fb; api.status = 'ok';
+    }catch(e){
+      api.status = 'failed';
+      api.reason = /permission/i.test(String(e && (e.code || e.message))) ? 'rules' : (e && e.message === 'timeout' ? 'timeout' : 'other');
+      api.detail = String(e && (e.code || e.message)); console.error(e);
     }
   })();
   return api;
 })();
 
+function connNote(full){
+  const st = DB.status;
+  if(st === 'ok') return full ? '<p class="okbox">🟢 온라인 서버에 연결됐어요. 다른 태블릿과 함께 할 수 있어요.</p>' : '';
+  if(st === 'checking') return '<p class="count">⏳ 서버에 연결하는 중...</p>';
+  if(st === 'noconfig') return `<p class="warnbox">🟡 <b>체험 모드</b>: 이 파일에는 Firebase 설정이 없어서 <b>같은 기기의 다른 창끼리만</b> 연결돼요.<br><small>다른 태블릿과 하려면 Firebase 설정을 넣은 파일을 Vercel에 올리고, 그 Vercel 주소로 열어 주세요.</small></p>`;
+  const why = {
+    claude: 'claude.ai 안에서는 외부 서버에 연결할 수 없어요. <b>Vercel 주소</b>로 열어 주세요.',
+    script: 'Firebase 프로그램을 불러오지 못했어요. 인터넷 연결이나 학교 방화벽(gstatic.com 차단)을 확인해 주세요.',
+    rules: 'Firebase <b>규칙</b>이 막혀 있어요. Realtime Database → 규칙 탭에 안내한 규칙을 붙여 넣고 <b>게시</b>를 눌러 주세요.',
+    timeout: '서버가 응답하지 않아요. databaseURL 주소가 맞는지, 인터넷이 되는지 확인해 주세요.',
+    other: '알 수 없는 오류예요: ' + esc(DB.detail || '')
+  }[DB.reason] || '';
+  return `<p class="warnbox">🔴 <b>온라인 서버 연결 실패</b><br><small>${why}<br>지금은 같은 기기의 다른 창끼리만 연결돼요.</small></p>`;
+}
 const net = { role: null, code: null, me: null, unsubs: [], games: {}, lastT: null, presence: {}, dismissed: {}, hb: null, seenDone: {} };
 function netStop(){ net.unsubs.forEach(u => { try{ u(); }catch(e){} }); net.unsubs = []; clearInterval(net.hb); net.games = {}; net.presence = {}; }
 function refKey(ref){ return ref.k === 'g' ? `g${ref.g}_${ref.i}` : ref.k === 'b' ? `b${ref.r}_${ref.i}` : 't3'; }
@@ -1472,7 +1500,7 @@ function studentGuide(){
   openModal(`<h2>📱 학생 입장 안내</h2><p>태블릿에서 대회 주소를 열고 <b>참가 코드</b>를 입력한 뒤 자기 이름을 누르면 돼요.</p>
     <div class="bigcode">${code}</div>
     ${url ? `<div id="qr" class="qr"></div><p class="url">${esc(url)}</p>` : `<p class="count">Vercel에 올린 주소에서 열면 QR 코드도 함께 나와요.</p>`}
-    ${DB.name === 'local' ? `<p class="warnbox">⚠ 지금은 <b>체험 모드</b>예요. Firebase를 연결하기 전이라 이 기기의 다른 창끼리만 연결돼요.</p>` : ''}
+    ${connNote(true)}
     <div id="presList">${presenceHTML()}</div>
     <div class="btns"><button id="mOk">닫기</button><button class="ghost sm" id="mKill">🗑 온라인 대회 닫기 (서버의 기록 지우기)</button></div>`, true);
   $('mOk').onclick = closeModal;
@@ -1491,7 +1519,7 @@ function renderJoin(prefill, contName){
     <div class="row" style="justify-content:center"><input id="jCode" class="codein" inputmode="numeric" maxlength="6" placeholder="0000" value="${esc(prefill || '')}"><button class="big" id="jGo">입장</button></div>
     ${contName ? `<div style="margin:14px 0"><button class="big" id="jCont">▶ ${esc(contName)}(으)로 이어서 하기</button><p class="count">내가 아니라면 아래에서 이름을 다시 골라요</p></div>` : ''}
     <div id="jNames"></div>
-    ${DB.name === 'local' ? '<p class="warnbox">⚠ 체험 모드: 같은 기기의 다른 창끼리만 연결돼요.</p>' : ''}
+    <div class="connslot">${connNote(false)}</div>
     <div class="row" style="justify-content:center;margin-top:22px"><button class="ghost sm" id="jTeacher">👩‍🏫 선생님 화면으로 가기</button></div></div>`;
   $('jGo').onclick = () => joinCode($('jCode').value.trim());
   $('jCode').onkeydown = e => { if(e.key === 'Enter') joinCode($('jCode').value.trim()); };
@@ -1503,9 +1531,9 @@ async function joinCode(code){
   if(!/^\d{4,6}$/.test(code)){ toast('숫자 코드를 입력해 주세요'); return; }
   $('jNames').innerHTML = '<p class="count">찾는 중...</p>';
   await DB.ready;
-  if(DB.failed){ $('jNames').innerHTML = '<p class="warnbox">서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.</p>'; return; }
+  if(DB.status === 'failed'){ $('jNames').innerHTML = connNote(true); return; }
   const v = await DB.get(`rooms/${code}/t`);
-  if(!v){ $('jNames').innerHTML = '<p class="warnbox">그런 대회를 찾을 수 없어요. 코드를 다시 확인해요.</p>'; return; }
+  if(!v){ $('jNames').innerHTML = '<p class="warnbox">그런 대회를 찾을 수 없어요. 코드를 다시 확인해요.</p>' + (DB.status === 'ok' ? '' : connNote(true)); return; }
   const t = JSON.parse(v), pres = (await DB.get(`rooms/${code}/presence`)) || {};
   $('jNames').innerHTML = `<h3 style="margin:18px 0 4px">${esc(t.name)}</h3><p class="count">내 이름을 눌러요</p><div class="namegrid">` +
     t.players.map(p => `<button class="ghost namebtn" data-n="${esc(p)}">${esc(p)}${fresh(pres[enc(p)]) ? ' <small style="color:var(--accent2)">●</small>' : ''}</button>`).join('') + '</div>';
@@ -1777,7 +1805,7 @@ function practiceHome(){
         <div><button class="big" id="prJoin" style="margin-top:8px">들어가기</button></div></div>
     </div>
     <div id="prMsg"></div>
-    ${DB.name === 'local' ? '<p class="warnbox">⚠ 체험 모드: 같은 기기의 다른 창끼리만 연결돼요.</p>' : ''}</div>`;
+    <div class="connslot">${connNote(false)}</div></div>`;
   const getName = () => { const n = $('prName').value.trim(); if(!n){ toast('이름을 먼저 적어 주세요'); $('prName').focus(); return null; } store.set('omok_pname', n); return n; };
   $('prMake').onclick = async () => { const n = getName(); if(!n) return; $('prMake').disabled = true; await createPractice(n, $('prNo33').checked, +$('prTime').value); };
   $('prJoin').onclick = () => { const n = getName(); if(!n) return; joinPractice($('prCode').value.trim(), n); };
@@ -1803,7 +1831,7 @@ async function joinPractice(code, name){
     m.guest = name; why = ''; return JSON.stringify(m);
   });
   if(!r.committed){
-    $('prMsg').innerHTML = `<p class="warnbox">${why === 'same' ? '방을 만든 친구와 다른 이름을 써 주세요.' : why === 'full' ? '이미 두 명이 들어가 있는 방이에요.' : '그런 방을 찾을 수 없어요. 코드를 다시 확인해요.'}</p>`;
+    $('prMsg').innerHTML = (DB.status === 'ok' || why === 'same' || why === 'full' ? '' : connNote(true)) + `<p class="warnbox">${why === 'same' ? '방을 만든 친구와 다른 이름을 써 주세요.' : why === 'full' ? '이미 두 명이 들어가 있는 방이에요.' : '그런 방을 찾을 수 없어요. 코드를 다시 확인해요.'}</p>`;
     return;
   }
   enterPractice(code, name);
@@ -1943,6 +1971,8 @@ window.addEventListener('popstate', () => {
 const savedNames = store.get('omok_names'); if(savedNames) $('names').value = savedNames;
 updateCount();
 $('hTeacher').onclick = enterTeacher;
+const paintConn = () => { $('homeConn').innerHTML = connNote(true); document.querySelectorAll('.connslot:not(#homeConn)').forEach(el => el.innerHTML = connNote(false)); };
+paintConn(); DB.ready.then(paintConn);
 $('hStudent').onclick = () => renderJoin('');
 $('hFriend').onclick = practiceHome;
 $('hLocal').onclick = () => { setMode('home'); $('btnPractice').click(); };
