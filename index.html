@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>우리 반 오목 토너먼트</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+:root{
+  --bg:#f6efe2; --paper:#fffaf0; --ink:#2b2420; --sub:#7a6a5c; --line:#e3d5bd;
+  --accent:#c8553d; --accent2:#2f6f62; --gold:#d9a400; --soft:#fff1c7;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Gowun Dodum',system-ui,sans-serif;min-height:100vh}
+h1,h2,h3,h4,.jua{font-family:'Jua',sans-serif;font-weight:400}
+button{font-family:'Jua',sans-serif;font-size:17px;border:none;border-radius:12px;padding:10px 18px;cursor:pointer;background:var(--accent2);color:#fff;transition:transform .08s,opacity .15s}
+button:hover{opacity:.9}button:active{transform:scale(.97)}
+button.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+button.red{background:var(--accent)}
+button.sm{font-size:14px;padding:6px 10px;border-radius:9px}
+button:disabled{opacity:.4;cursor:default}
+input,textarea,select{font-family:inherit;font-size:16px;border:2px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;color:var(--ink)}
+input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent2)}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 22px;border-bottom:2px solid var(--line);background:var(--paper);flex-wrap:wrap}
+header h1{margin:0;font-size:28px;display:flex;align-items:center;gap:10px}
+header .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.logo{width:34px;height:34px}
+main{padding:20px 22px;max-width:1500px;margin:0 auto}
+.hidden{display:none!important}
+.card{background:var(--paper);border:2px solid var(--line);border-radius:18px;padding:22px}
+
+/* setup */
+.setup{display:grid;grid-template-columns:1.1fr 1fr;gap:22px}
+@media(max-width:860px){.setup{grid-template-columns:1fr}}
+.setup textarea{width:100%;min-height:320px;font-size:18px;line-height:1.6}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.opt{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px dashed var(--line);gap:10px}
+.opt small{color:var(--sub);display:block;font-size:13px}
+.optgroup{background:#fbf3e2;border-radius:12px;padding:0 12px;margin:4px 0 8px}
+.big{font-size:22px;padding:14px 26px}
+.count{color:var(--sub)}
+.sec{font-family:'Jua';color:var(--sub);margin:18px 0 2px;font-size:15px}
+
+/* tabs */
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.tabs button{background:transparent;color:var(--sub);border:2px solid var(--line)}
+.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.legend{color:var(--sub);margin:0 0 14px}
+.banner{background:var(--soft);border:2px solid #f0d78a;border-radius:14px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:17px}
+
+/* bracket */
+.bracket-wrap{overflow-x:auto;padding-bottom:10px}
+.bracket{display:flex;gap:56px;min-width:max-content;align-items:stretch;position:relative}
+.bracket svg.lines{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.round{display:flex;flex-direction:column;min-width:200px;position:relative;z-index:1}
+.round h3{text-align:center;margin:0 0 10px;color:var(--sub);font-size:20px}
+.round .slots{flex:1;display:flex;flex-direction:column;justify-content:space-around;gap:14px}
+.match{background:var(--paper);border:2px solid var(--line);border-radius:14px;overflow:hidden;position:relative;transition:transform .1s}
+.match.ready{border-color:var(--accent2);cursor:pointer;box-shadow:0 0 0 4px rgba(47,111,98,.14)}
+.match.ready:hover{transform:translateY(-2px)}
+.match.done{cursor:pointer}
+.match.byecard{opacity:.7}
+.match .p{display:flex;align-items:center;gap:8px;padding:9px 12px;font-size:18px;min-height:42px}
+.match .p+.p{border-top:1px solid var(--line)}
+.match .p.win{background:var(--soft);font-weight:700}
+.match .p.lose{color:#b3a596;text-decoration:line-through}
+.match .p.wait{color:#c9bba8;font-style:italic}
+.match .num{position:absolute;right:8px;top:1px;font-size:11px;color:var(--sub)}
+.match .meta{font-size:11px;color:var(--sub);padding:2px 12px 5px;border-top:1px dashed var(--line)}
+.dot{width:14px;height:14px;border-radius:50%;flex:none;border:1px solid #0003;display:inline-block}
+.dot.b{background:radial-gradient(circle at 35% 35%,#666,#000)}
+.dot.w{background:radial-gradient(circle at 35% 35%,#fff,#ccc)}
+.dot.n{background:transparent;border-color:transparent}
+.champ{min-width:230px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:6px}
+.champ .trophy{font-size:64px}
+.champ .name{font-family:'Jua';font-size:34px;color:var(--accent)}
+.podium{display:flex;flex-direction:column;gap:4px;margin-top:6px;font-size:16px}
+.third-box{margin-top:22px;width:210px;text-align:left}
+.third-box h4{margin:0 0 6px;color:var(--sub);text-align:center}
+
+/* groups */
+.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.group{background:var(--paper);border:2px solid var(--line);border-radius:18px;padding:16px}
+.group.complete{border-color:var(--accent2)}
+.group h3{margin:0 0 8px;font-size:24px;display:flex;justify-content:space-between;align-items:center}
+.group h3 small{font-family:'Gowun Dodum';font-size:13px;color:var(--sub)}
+table{border-collapse:collapse;width:100%}
+th,td{padding:6px 8px;text-align:center;border-bottom:1px solid var(--line);font-size:15px}
+th{color:var(--sub);font-weight:400;font-size:13px}
+td.l{text-align:left}
+tr.adv td{background:#e6f2ee}
+.badge{display:inline-block;font-size:11px;background:var(--accent2);color:#fff;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:middle}
+.gm{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.gm .m{display:flex;align-items:center;gap:6px;border:2px solid var(--line);border-radius:10px;padding:6px 10px;font-size:15px;background:#fff}
+.gm .m .vs{flex:1;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.gm .m.ready{border-color:var(--accent2);cursor:pointer}
+.gm .m.ready:hover{background:#eef6f3}
+.gm .m.done{cursor:pointer;background:#faf6ee}
+.gm .m b.w{color:var(--accent)}
+.gm .m s{color:#b3a596}
+
+/* records */
+.recgrid{display:grid;grid-template-columns:1fr 1.4fr;gap:18px}
+@media(max-width:1000px){.recgrid{grid-template-columns:1fr}}
+.recgrid .card{padding:16px;overflow-x:auto}
+.recgrid h3{margin:0 0 10px}
+
+/* game */
+.game{display:grid;grid-template-columns:230px 1fr 230px;gap:20px;align-items:start}
+@media(max-width:1000px){.game{grid-template-columns:1fr 1fr}.boardbox{grid-column:1/-1;order:-1}}
+.player{background:var(--paper);border:3px solid var(--line);border-radius:18px;padding:16px;text-align:center;transition:all .2s}
+.player.turn{border-color:var(--accent);box-shadow:0 0 0 6px rgba(200,85,61,.15);transform:scale(1.03)}
+.player .stone{width:60px;height:60px;border-radius:50%;margin:0 auto 10px;box-shadow:0 3px 6px #0004}
+.player .stone.b{background:radial-gradient(circle at 35% 30%,#777,#111 60%,#000)}
+.player .stone.w{background:radial-gradient(circle at 35% 30%,#fff,#e8e8e8 55%,#bbb)}
+.player .pname{font-family:'Jua';font-size:28px;word-break:keep-all}
+.player .pcolor{color:var(--sub)}
+.player .timer{font-family:'Jua';font-size:40px;margin-top:6px;color:var(--accent2);min-height:10px}
+.player .timer.low{color:var(--accent);animation:blink .5s infinite alternate}
+@keyframes blink{to{opacity:.4}}
+.side-info{margin-top:10px;color:var(--sub);font-size:14px;line-height:1.6}
+.boardbox{display:flex;flex-direction:column;align-items:center;gap:10px}
+#board{width:min(100%, calc(100vh - 210px));min-width:280px;aspect-ratio:1;border-radius:10px;box-shadow:0 10px 30px #5a3a1240;cursor:pointer;touch-action:manipulation}
+.status{font-family:'Jua';font-size:24px;min-height:32px;text-align:center}
+.status.warn{color:var(--accent)}
+.gamebtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.gamebtns button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.thinking{display:inline-block;animation:blink .6s infinite alternate}
+
+/* modal */
+.modal{position:fixed;inset:0;background:#2b242099;display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.modal .box{background:var(--paper);border-radius:22px;padding:26px;max-width:500px;width:100%;text-align:center;box-shadow:0 20px 50px #0005;max-height:94vh;overflow:auto}
+.modal .box.wide{max-width:720px}
+.modal h2{margin:0 0 6px;font-size:30px}
+.modal p{color:var(--sub)}
+.modal .btns{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.modal textarea{width:100%;min-height:150px;font-size:12px;font-family:monospace}
+.modal .help{text-align:left;line-height:1.7;color:var(--ink)}
+.modal .help h3{margin:14px 0 4px}
+.vsbig{display:flex;align-items:center;justify-content:center;gap:14px;font-family:'Jua';font-size:26px;margin:14px 0;flex-wrap:wrap}
+.vsbig span.v{color:var(--sub);font-size:18px}
+.pickrow{display:flex;gap:10px}
+.pickrow button{flex:1}
+#rpCanvas{width:min(100%,520px);aspect-ratio:1;border-radius:10px}
+.rpctl{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:10px;flex-wrap:wrap}
+.rpctl input[type=range]{flex:1;min-width:160px}
+.confetti{position:fixed;top:-20px;width:10px;height:14px;z-index:60;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+.stu{max-width:760px;margin:0 auto;text-align:center}
+.codein{font-family:'Jua';font-size:40px;width:200px;text-align:center;letter-spacing:8px;padding:8px}
+.namegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:10px}
+.namebtn{font-size:20px;padding:16px 8px}
+.warnbox{background:#fdeee9;border:2px solid #f1c3b6;border-radius:12px;padding:10px 14px;color:var(--accent)!important}
+.stuhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.stuhead .hi{font-family:'Jua';font-size:34px}
+.stucard{background:var(--paper);border:3px solid var(--line);border-radius:20px;padding:26px;text-align:center;margin-bottom:12px}
+.stucard.ready{border-color:var(--accent2);box-shadow:0 0 0 6px rgba(47,111,98,.12)}
+.stucard.hot{border-color:var(--accent);box-shadow:0 0 0 6px rgba(200,85,61,.14)}
+.stucard .big2{font-family:'Jua';font-size:28px;margin:6px 0 14px}
+.stugrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+@media(max-width:800px){.stugrid{grid-template-columns:1fr}}
+.stugrid h3{margin:0 0 10px}
+.recrow{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap}
+.recrow span.w,.recrow span.l{font-family:'Jua';color:#fff;border-radius:7px;padding:1px 8px}
+.recrow span.w{background:var(--accent2)}.recrow span.l{background:#b3a596}
+.recrow button{margin-left:auto}
+.livelist{display:flex;flex-direction:column;gap:8px}
+.livelist button{text-align:left;font-family:'Gowun Dodum';font-size:16px}
+.livegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.livecard{background:var(--paper);border:2px solid var(--line);border-radius:16px;padding:12px;text-align:center;cursor:pointer}
+.livecard:hover{border-color:var(--accent2)}
+.livecard canvas{width:100%;aspect-ratio:1;border-radius:8px}
+.bigcode{font-family:'Jua';font-size:84px;letter-spacing:14px;color:var(--accent2);line-height:1.1;margin:6px 0}
+.qr{display:flex;justify-content:center;margin:8px 0}
+.url{font-family:monospace;font-size:13px;word-break:break-all}
+.pres{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;font-size:14px}
+.pres span{background:#fff;border:1px solid var(--line);border-radius:8px;padding:2px 8px;color:var(--sub)}
+.pres span.on{color:var(--ink);border-color:var(--accent2)}
+.match .meta.live,.gm .m .live{color:var(--accent);font-weight:700}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:12px;z-index:70;font-family:'Jua'}
+</style>
+</head>
+<body>
+<header>
+  <h1>
+    <svg class="logo" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#e2b46a"/><path d="M8 0v40M20 0v40M32 0v40M0 8h40M0 20h40M0 32h40" stroke="#7a5523" stroke-width="1.5"/><circle cx="20" cy="20" r="7" fill="#111"/><circle cx="32" cy="8" r="7" fill="#fff" stroke="#bbb"/></svg>
+    <span id="title">우리 반 오목 토너먼트</span>
+  </h1>
+  <div class="acts"><span id="headerActs" class="acts"></span>
+    <button class="ghost sm" id="btnSound" title="효과음">🔊</button>
+    <button class="ghost sm" id="btnFull" title="전체 화면">⛶</button>
+  </div>
+</header>
+
+<main>
+  <!-- 설정 -->
+  <section id="setupView">
+    <div class="setup">
+      <div class="card">
+        <h2 style="margin-top:0">👥 참가자 명단</h2>
+        <p class="count" style="margin-top:-6px">한 줄에 한 명씩 적어 주세요. (팀전이면 팀 이름을 적어도 돼요)</p>
+        <textarea id="names" placeholder="김민준&#10;이서연&#10;박지호&#10;..."></textarea>
+        <div class="row">
+          <span class="count" id="nameCount">0명</span>
+          <span style="flex:1"></span>
+          <input type="number" id="numFill" min="2" max="64" value="24" style="width:76px">
+          <button class="ghost sm" id="btnFillNum">번호로 채우기</button>
+          <button class="ghost sm" id="btnClear">지우기</button>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <button id="btnStudent">🧒 학생 입장 (태블릿)</button>
+          <button class="ghost" id="btnPractice">⚫ 둘이서 연습</button>
+          <button class="ghost" id="btnAI">🤖 컴퓨터와 연습</button>
+          <button class="ghost" id="btnHelp">❓ 규칙 안내</button>
+          <button class="ghost" id="btnRestore">📂 백업 불러오기</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2 style="margin-top:0">⚙️ 대회 설정</h2>
+        <div class="opt"><div>대회 이름</div><input id="tName" value="우리 반 오목 토너먼트" style="width:230px"></div>
+        <div class="opt"><div>진행 방식<small>온라인: 학생이 각자 태블릿으로 대국, 선생님은 관전</small></div>
+          <select id="optMode"><option value="screen">교실 화면 하나로</option><option value="online">📱 학생 태블릿 온라인</option></select></div>
+        <div class="opt"><div>대회 방식<small>조별 리그는 모두가 여러 판을 둘 수 있어요</small></div>
+          <select id="optFormat"><option value="single">바로 토너먼트</option><option value="league" selected>조별 리그 → 본선 토너먼트</option></select></div>
+        <div class="optgroup" id="leagueOpts">
+          <div class="opt"><div>조 인원<small>남는 사람은 몇몇 조에 한 명씩 더해져요</small></div>
+            <select id="optGroupSize"><option value="3">3명씩</option><option value="4" selected>4명씩</option><option value="5">5명씩</option></select></div>
+          <div class="opt" style="border-bottom:none"><div>조별 본선 진출</div>
+            <select id="optAdvance"><option value="1">1위만</option><option value="2" selected>1·2위</option></select></div>
+        </div>
+        <div class="opt"><div>3위 결정전<small>준결승에서 진 두 사람이 한 번 더</small></div><input type="checkbox" id="optThird" checked></div>
+        <div class="opt"><div>대진 섞기<small>끄면 적은 순서대로</small></div><input type="checkbox" id="optShuffle" checked></div>
+        <div class="sec">대국 규칙</div>
+        <div class="opt"><div>흑(선공) 정하기</div>
+          <select id="optBlack"><option value="random">매 경기 랜덤 추첨</option><option value="top">대진표 위쪽이 흑</option><option value="ask">경기 전에 직접 선택</option></select></div>
+        <div class="opt"><div>쌍삼(3·3) 금지<small>열린 3을 한 번에 두 개 만드는 수</small></div><input type="checkbox" id="optNo33" checked></div>
+        <div class="opt"><div>사사(4·4) 금지<small>4를 한 번에 두 개 만드는 수</small></div><input type="checkbox" id="optNo44"></div>
+        <div class="opt"><div>한 수 제한시간<small>시간이 지나면 차례가 넘어가요</small></div>
+          <select id="optTime"><option value="0">없음</option><option value="15">15초</option><option value="20">20초</option><option value="30" selected>30초</option><option value="60">60초</option></select></div>
+        <div class="opt"><div>한 수 무르기</div>
+          <select id="optUndo"><option value="-1">무제한</option><option value="1" selected>1인당 1번</option><option value="0">금지</option></select></div>
+        <div class="opt"><div>두 번 눌러 두기<small>터치 화면 실수 방지</small></div><input type="checkbox" id="optTap"></div>
+        <div class="opt" style="border-bottom:none"><div>판 크기</div>
+          <select id="optSize"><option value="15" selected>15 × 15</option><option value="19">19 × 19</option><option value="13">13 × 13</option></select></div>
+        <div class="row" style="margin-top:14px;justify-content:flex-end">
+          <button class="big" id="btnMake">🏆 대회 만들기</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 대회 -->
+  <section id="bracketView" class="hidden">
+    <div class="tabs" id="tabs"></div>
+    <div id="tabGroups"></div>
+    <div id="tabMain">
+      <p class="legend">초록 테두리 경기를 눌러 대국을 시작하세요. 끝난 경기를 누르면 기보를 보거나 결과를 고칠 수 있어요.</p>
+      <div class="bracket-wrap"><div class="bracket" id="bracket"></div></div>
+    </div>
+    <div id="tabRecords"></div>
+    <div id="tabLive"></div>
+  </section>
+
+  <!-- 학생 -->
+  <section id="studentView" class="hidden"></section>
+
+  <!-- 대국 -->
+  <section id="gameView" class="hidden">
+    <div class="game">
+      <div class="player" id="pBlack"><div class="stone b"></div><div class="pname" id="nBlack">흑</div><div class="pcolor">흑 · 선공</div><div class="timer" id="tBlack"></div><div class="side-info" id="stageInfo"></div></div>
+      <div class="boardbox">
+        <div class="status" id="status"></div>
+        <canvas id="board" width="1000" height="1000"></canvas>
+        <div class="gamebtns">
+          <button class="ghost" id="btnUndo">↩ 무르기</button>
+          <button class="ghost" id="btnPause">⏸ 일시정지</button>
+          <button class="ghost" id="btnNums">🔢 수 번호</button>
+          <button class="ghost" id="btnHelp2">❓ 규칙</button>
+          <button class="red" id="btnResign">🏳 기권</button>
+          <button class="ghost" id="btnLeave">← 나가기</button>
+        </div>
+      </div>
+      <div class="player" id="pWhite"><div class="stone w"></div><div class="pname" id="nWhite">백</div><div class="pcolor">백 · 후공</div><div class="timer" id="tWhite"></div><div class="side-info" id="ruleInfo"></div></div>
+    </div>
+  </section>
+</main>
+
+<div class="modal hidden" id="modal"><div class="box" id="modalBox"></div></div>
+
+<script>
+/* ▼▼▼ 학생 태블릿 온라인 대국용 Firebase 설정 ▼▼▼
+   Firebase 콘솔 > 프로젝트 설정 > 내 앱(웹)에서 복사한 firebaseConfig를 아래 null 자리에 붙여 넣으세요.
+   예) window.FIREBASE_CONFIG = { apiKey: "...", authDomain: "...", databaseURL: "https://...firebasedatabase.app", projectId: "...", appId: "..." };
+   비워 두면 '체험 모드'(같은 기기의 여러 창끼리만 연결)로 동작해요. */
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyB3PiJqYykEP2E49lvFiAizMFTnq63kjtE",
+  authDomain: "omok-7ce0f.firebaseapp.com",
+  databaseURL: "https://omok-7ce0f-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "omok-7ce0f",
+  storageBucket: "omok-7ce0f.firebasestorage.app",
+  messagingSenderId: "824757042300",
+  appId: "1:824757042300:web:1ab8bb8238326d7f9f1df9",
+  measurementId: "G-JNV8EPSG25"
+};
+/* ▲▲▲ 여기까지 ▲▲▲ */
+</script>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const BYE = '__BYE__';
+const DIRS = [[1,0],[0,1],[1,1],[1,-1]];
+const store = {
+  get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+// 학생 입장 정보는 탭(창)마다 따로 기억 → 같은 컴퓨터에서 여러 창으로 체험해도 섞이지 않음
+const sstore = {
+  get(k){ try{ return JSON.parse(sessionStorage.getItem(k)); }catch(e){ return null; } },
+  set(k,v){ try{ sessionStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ sessionStorage.removeItem(k); }catch(e){} }
+};
+let T = null;   // 대회
+let G = null;   // 진행 중인 대국
+let tab = null;
+
+/* ================= 공통 ================= */
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function shuffle(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function save(){ if(!T || net.role === 'student') return; store.set('omok_tournament', T); pushT(); }
+function modalOpen(){ return !$('modal').classList.contains('hidden'); }
+function openModal(html, wide){ $('modalBox').innerHTML = html; $('modalBox').classList.toggle('wide', !!wide); $('modal').classList.remove('hidden'); }
+function closeModal(){ $('modal').classList.add('hidden'); if(rp.iv){ clearInterval(rp.iv); rp.iv = null; } }
+function alertBox(title, msg){ openModal(`<h2>${title}</h2><p>${msg}</p><div class="btns"><button id="mOk">확인</button></div>`); $('mOk').onclick = closeModal; }
+function confirmBox(title, msg, onYes, yesLabel){
+  openModal(`<h2>${title}</h2><p>${msg}</p><div class="pickrow" style="margin-top:18px"><button class="ghost" id="mNo">취소</button><button class="red" id="mYes">${yesLabel || '확인'}</button></div>`);
+  $('mNo').onclick = closeModal;
+  $('mYes').onclick = () => { closeModal(); onYes(); };
+}
+function toast(msg){ const d = document.createElement('div'); d.className = 'toast'; d.textContent = msg; document.body.appendChild(d); setTimeout(() => d.remove(), 1800); }
+async function copyText(text){
+  try{ await navigator.clipboard.writeText(text); toast('복사했어요!'); return true; }
+  catch(e){ return false; }
+}
+function show(view){
+  ['setupView','bracketView','gameView','studentView'].forEach(v => $(v).classList.toggle('hidden', v !== view));
+  renderHeader(view);
+  if(view === 'bracketView') renderTournament();
+}
+function renderHeader(view){
+  const a = $('headerActs'); a.innerHTML = '';
+  const add = (txt, cls, fn) => { const b = document.createElement('button'); b.textContent = txt; b.className = 'sm ' + (cls || ''); b.onclick = fn; a.appendChild(b); };
+  $('title').textContent = T ? T.name : '우리 반 오목 토너먼트';
+  if(view === 'bracketView' && net.role === 'student'){
+    add('← 내 화면으로', '', () => { show('studentView'); renderStudent(); });
+    return;
+  }
+  if(view === 'bracketView'){
+    if(T && T.online) add(`📱 참가 코드 ${T.online.code}`, '', studentGuide);
+    add('💾 백업', 'ghost', backupMenu);
+    add('🔀 대진 다시 만들기', 'ghost', () => confirmBox('대진을 새로 만들까요?', '지금까지의 경기 결과가 모두 지워져요.' + (T.online ? ' (참가 코드는 그대로예요)' : ''), () => makeTournament(T.players, T.settings, T.name, true)));
+    add('⚙️ 처음 화면', 'ghost', () => show('setupView'));
+  }
+  if(view === 'setupView' && T){
+    add('▶ 진행 중인 대회로', '', () => {
+      const s = readSettings();
+      // 진행 중에도 바꿀 수 있는 대국 규칙만 반영
+      ['black','no33','no44','time','undo','tap','size'].forEach(k => T.settings[k] = s[k]);
+      T.name = $('tName').value.trim() || T.name; save(); show('bracketView');
+    });
+  }
+}
+
+/* ================= 효과음 ================= */
+const Snd = {
+  on: store.get('omok_sound') !== false, ctx: null,
+  ac(){ if(!this.ctx){ try{ this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ this.on = false; } } return this.ctx; },
+  tone(freq, dur, type, vol, delay){
+    const ac = this.ac(); if(!ac) return;
+    try{
+      const t = ac.currentTime + (delay || 0), o = ac.createOscillator(), g = ac.createGain();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(vol || .2, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+      o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + dur);
+    }catch(e){}
+  },
+  play(kind){
+    if(!this.on) return;
+    if(kind === 'stone'){ this.tone(520, .07, 'triangle', .25); this.tone(260, .09, 'sine', .15); }
+    else if(kind === 'bad'){ this.tone(150, .25, 'sawtooth', .12); }
+    else if(kind === 'win'){ [523,659,784,1047].forEach((f,i) => this.tone(f, .25, 'triangle', .2, i * .12)); }
+    else if(kind === 'tick'){ this.tone(880, .05, 'square', .06); }
+    else if(kind === 'champ'){ [523,659,784,659,784,1047,1047].forEach((f,i) => this.tone(f, .3, 'triangle', .2, i * .15)); }
+  }
+};
+function renderSoundBtn(){ $('btnSound').textContent = Snd.on ? '🔊' : '🔇'; }
+$('btnSound').onclick = () => { Snd.on = !Snd.on; store.set('omok_sound', Snd.on); renderSoundBtn(); if(Snd.on) Snd.play('stone'); };
+$('btnFull').onclick = () => {
+  try{
+    if(document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(() => toast('이 화면에서는 전체 화면이 안 돼요'));
+  }catch(e){ toast('이 화면에서는 전체 화면이 안 돼요'); }
+};
+renderSoundBtn();
+
+/* ================= 규칙 엔진 ================= */
+function at(g, N, x, y){ return (x < 0 || y < 0 || x >= N || y >= N) ? -1 : g[y][x]; }
+function runInfo(g, N, x, y, dx, dy, c){
+  let a = 0, b = 0;
+  while(at(g, N, x + dx*(a+1), y + dy*(a+1)) === c) a++;
+  while(at(g, N, x - dx*(b+1), y - dy*(b+1)) === c) b++;
+  return { len: a + b + 1, a, b };
+}
+function fiveLine(g, N, x, y, c){
+  for(const [dx, dy] of DIRS){
+    const r = runInfo(g, N, x, y, dx, dy, c);
+    if(r.len >= 5){ const cells = []; for(let k = -r.b; k <= r.a; k++) cells.push([x + dx*k, y + dy*k]); return cells; }
+  }
+  return null;
+}
+// (x,y)에 c가 놓였다고 가정. 이 방향에 '4'(한 수만 더 두면 5)가 있는지
+function hasFour(g, N, x, y, dx, dy, c){
+  for(let k = -4; k <= 4; k++){
+    if(!k) continue;
+    const ex = x + dx*k, ey = y + dy*k;
+    if(at(g, N, ex, ey) !== 0) continue;
+    g[ey][ex] = c; const ok = runInfo(g, N, x, y, dx, dy, c).len >= 5; g[ey][ex] = 0;
+    if(ok) return true;
+  }
+  return false;
+}
+// 이 방향에 '열린 3'(한 수 더 두면 양쪽이 열린 4가 됨)이 있는지
+function hasOpenThree(g, N, x, y, dx, dy, c){
+  if(hasFour(g, N, x, y, dx, dy, c)) return false;
+  for(let k = -4; k <= 4; k++){
+    if(!k) continue;
+    const ex = x + dx*k, ey = y + dy*k;
+    if(at(g, N, ex, ey) !== 0) continue;
+    g[ey][ex] = c;
+    const r = runInfo(g, N, x, y, dx, dy, c);
+    const open = r.len === 4 && at(g, N, x + dx*(r.a+1), y + dy*(r.a+1)) === 0 && at(g, N, x - dx*(r.b+1), y - dy*(r.b+1)) === 0;
+    g[ey][ex] = 0;
+    if(open) return true;
+  }
+  return false;
+}
+// 금수 판정: 'five'(승리) | '33' | '44' | null
+function judge(g, N, x, y, c, rules){
+  g[y][x] = c;
+  let res = null;
+  if(fiveLine(g, N, x, y, c)) res = 'five';
+  else {
+    let threes = 0, fours = 0;
+    for(const [dx, dy] of DIRS){
+      if(rules.no44 && hasFour(g, N, x, y, dx, dy, c)) fours++;
+      if(rules.no33 && hasOpenThree(g, N, x, y, dx, dy, c)) threes++;
+    }
+    if(rules.no44 && fours >= 2) res = '44';
+    else if(rules.no33 && threes >= 2) res = '33';
+  }
+  g[y][x] = 0;
+  return res;
+}
+
+/* ================= 컴퓨터 상대 ================= */
+const W = [0, 1, 10, 80, 700, 100000];
+function lineScore(g, N, x, y, c){
+  let total = 0;
+  for(const [dx, dy] of DIRS){
+    for(let s = -4; s <= 0; s++){
+      let own = 0, blocked = false;
+      for(let k = s; k < s + 5; k++){
+        const v = k === 0 ? c : at(g, N, x + dx*k, y + dy*k);
+        if(v === -1 || (v !== 0 && v !== c)){ blocked = true; break; }
+        if(v === c) own++;
+      }
+      if(!blocked) total += W[own];
+    }
+  }
+  return total;
+}
+function aiPick(g, N, me, level, rules){
+  const opp = 3 - me, cands = [];
+  let any = false;
+  for(let y = 0; y < N; y++) for(let x = 0; x < N; x++){
+    if(g[y][x]) { any = true; continue; }
+    let near = false;
+    for(let dy = -2; dy <= 2 && !near; dy++) for(let dx = -2; dx <= 2; dx++){ const v = at(g, N, x+dx, y+dy); if(v > 0){ near = true; break; } }
+    if(near) cands.push([x, y]);
+  }
+  const c = Math.floor(N / 2);
+  if(!any) return [c, c];
+  const defW = level === 'easy' ? .55 : level === 'normal' ? .95 : 1.1;
+  const scored = [];
+  for(const [x, y] of cands){
+    const j = judge(g, N, x, y, me, rules);
+    if(j === '33' || j === '44') continue;
+    if(j === 'five') return [x, y];
+    const atk = lineScore(g, N, x, y, me), def = lineScore(g, N, x, y, opp);
+    let s = atk + def * defW;
+    if(level === 'hard'){
+      // 상대가 다음에 5를 만드는 자리는 반드시 막기
+      if(judge(g, N, x, y, opp, {}) === 'five') s += 500000;
+      g[y][x] = me;
+      for(const [dx, dy] of DIRS){
+        if(hasFour(g, N, x, y, dx, dy, me)) s += 400;
+        else if(hasOpenThree(g, N, x, y, dx, dy, me)) s += 250;
+      }
+      g[y][x] = 0;
+    } else if(level === 'normal'){
+      if(judge(g, N, x, y, opp, {}) === 'five') s += 500000;
+    }
+    scored.push({x, y, s});
+  }
+  if(!scored.length) return cands[0] || null;
+  scored.sort((p, q) => q.s - p.s);
+  let pickFrom = 1;
+  if(level === 'easy') pickFrom = Math.min(5, scored.length);
+  if(level === 'normal') pickFrom = Math.random() < .75 ? 1 : Math.min(2, scored.length);
+  const p = scored[Math.floor(Math.random() * pickFrom)];
+  return [p.x, p.y];
+}
+
+/* ================= 판 그리기 ================= */
+function drawBoard(cv, st){
+  const ctx = cv.getContext('2d'), S = cv.width, N = st.N, pad = S * 0.055, cell = (S - pad * 2) / (N - 1);
+  const g = ctx.createLinearGradient(0, 0, S, S); g.addColorStop(0, '#e9bf74'); g.addColorStop(1, '#d6a457');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, S, S);
+  ctx.strokeStyle = '#6b4a1e'; ctx.lineWidth = S / 500;
+  for(let i = 0; i < N; i++){
+    const p = pad + i * cell;
+    ctx.beginPath(); ctx.moveTo(pad, p); ctx.lineTo(S - pad, p); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p, pad); ctx.lineTo(p, S - pad); ctx.stroke();
+  }
+  ctx.lineWidth = S / 300; ctx.strokeRect(pad, pad, S - 2 * pad, S - 2 * pad);
+  const stars = N === 19 ? [3, 9, 15] : N === 15 ? [3, 7, 11] : [3, 6, 9];
+  ctx.fillStyle = '#5a3d15';
+  stars.forEach(x => stars.forEach(y => { ctx.beginPath(); ctx.arc(pad + x * cell, pad + y * cell, cell * 0.12, 0, Math.PI * 2); ctx.fill(); }));
+  const stone = (x, y, c, alpha) => {
+    const cx = pad + x * cell, cy = pad + y * cell, r = cell * 0.46;
+    ctx.save(); ctx.globalAlpha = alpha || 1; ctx.shadowColor = '#0006'; ctx.shadowBlur = cell * 0.15; ctx.shadowOffsetY = cell * 0.06;
+    const gr = ctx.createRadialGradient(cx - r * .35, cy - r * .4, r * .1, cx, cy, r);
+    if(c === 1){ gr.addColorStop(0, '#777'); gr.addColorStop(.5, '#1a1a1a'); gr.addColorStop(1, '#000'); }
+    else { gr.addColorStop(0, '#fff'); gr.addColorStop(.6, '#eee'); gr.addColorStop(1, '#b9b9b9'); }
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  };
+  if(st.preview && at(st.grid, N, st.preview[0], st.preview[1]) === 0){
+    const [px, py] = st.preview;
+    stone(px, py, st.preview[2], st.preview[3] ? .6 : .35);
+    if(st.preview[3]){ ctx.strokeStyle = '#e0412b'; ctx.lineWidth = cell * .08; ctx.beginPath(); ctx.arc(pad + px * cell, pad + py * cell, cell * .52, 0, Math.PI * 2); ctx.stroke(); }
+  }
+  const order = {};
+  st.moves.forEach((m, i) => order[m.x + ',' + m.y] = i + 1);
+  for(let y = 0; y < N; y++) for(let x = 0; x < N; x++) if(st.grid[y][x]) stone(x, y, st.grid[y][x]);
+  if(st.nums){
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `bold ${cell * (N > 15 ? .36 : .4)}px sans-serif`;
+    for(const k in order){ const [x, y] = k.split(',').map(Number); if(!st.grid[y][x]) continue; ctx.fillStyle = st.grid[y][x] === 1 ? '#fff' : '#222'; ctx.fillText(order[k], pad + x * cell, pad + y * cell + 1); }
+  }
+  const last = st.moves[st.moves.length - 1];
+  if(last && !st.nums){ ctx.fillStyle = '#e0412b'; ctx.beginPath(); ctx.arc(pad + last.x * cell, pad + last.y * cell, cell * 0.13, 0, Math.PI * 2); ctx.fill(); }
+  if(last && st.nums){ ctx.strokeStyle = '#e0412b'; ctx.lineWidth = cell * .07; ctx.beginPath(); ctx.arc(pad + last.x * cell, pad + last.y * cell, cell * .46, 0, Math.PI * 2); ctx.stroke(); }
+  if(st.winLine){
+    const a = st.winLine[0], b = st.winLine[st.winLine.length - 1];
+    ctx.strokeStyle = '#e0412bdd'; ctx.lineWidth = cell * 0.18; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(pad + a[0] * cell, pad + a[1] * cell); ctx.lineTo(pad + b[0] * cell, pad + b[1] * cell); ctx.stroke();
+  }
+}
+function cellFromEvent(cv, N, e){
+  const rect = cv.getBoundingClientRect(), sc = cv.width / rect.width, pad = cv.width * 0.055, cell = (cv.width - pad * 2) / (N - 1);
+  const x = Math.round(((e.clientX - rect.left) * sc - pad) / cell), y = Math.round(((e.clientY - rect.top) * sc - pad) / cell);
+  return (x < 0 || y < 0 || x >= N || y >= N) ? null : [x, y];
+}
+
+/* ================= 설정 화면 ================= */
+function getNames(){ return $('names').value.split('\n').map(s => s.trim()).filter(Boolean); }
+function updateCount(){
+  const n = getNames(), dup = n.length - new Set(n).size;
+  $('nameCount').textContent = `${n.length}명` + (dup ? ` · 중복 이름 ${dup}개 (번호를 붙여 주세요)` : '');
+  store.set('omok_names', $('names').value);
+}
+$('names').addEventListener('input', updateCount);
+$('btnFillNum').onclick = () => { const n = Math.max(2, Math.min(64, +$('numFill').value || 2)); $('names').value = Array.from({length:n}, (_, i) => `${i+1}번`).join('\n'); updateCount(); };
+$('btnClear').onclick = () => { $('names').value = ''; updateCount(); };
+$('optFormat').onchange = () => $('leagueOpts').classList.toggle('hidden', $('optFormat').value !== 'league');
+function readSettings(){
+  return { mode: $('optMode').value, format: $('optFormat').value, groupSize: +$('optGroupSize').value, advance: +$('optAdvance').value, third: $('optThird').checked,
+    shuffle: $('optShuffle').checked, black: $('optBlack').value, no33: $('optNo33').checked, no44: $('optNo44').checked,
+    time: +$('optTime').value, undo: +$('optUndo').value, tap: $('optTap').checked, size: +$('optSize').value };
+}
+function applySettings(s){
+  if(!s) return;
+  const set = (id, v) => { if(v !== undefined) $(id).value = String(v); };
+  const chk = (id, v) => { if(v !== undefined) $(id).checked = !!v; };
+  set('optMode', s.mode); set('optFormat', s.format); set('optGroupSize', s.groupSize); set('optAdvance', s.advance); chk('optThird', s.third); chk('optShuffle', s.shuffle);
+  set('optBlack', s.black); chk('optNo33', s.no33); chk('optNo44', s.no44); set('optTime', s.time); set('optUndo', s.undo); chk('optTap', s.tap); set('optSize', s.size);
+  $('leagueOpts').classList.toggle('hidden', $('optFormat').value !== 'league');
+}
+store.get('omok_settings') && applySettings(store.get('omok_settings'));
+document.querySelectorAll('#setupView select, #setupView input[type=checkbox]').forEach(el => el.addEventListener('change', () => store.set('omok_settings', readSettings())));
+
+$('btnMake').onclick = () => {
+  const names = getNames(), s = readSettings();
+  if(names.length < 2) return alertBox('참가자가 부족해요', '2명 이상 적어 주세요.');
+  if(new Set(names).size !== names.length) return alertBox('이름이 겹쳐요', '같은 이름이 있으면 구분이 안 돼요. 뒤에 번호를 붙여 주세요.');
+  if(s.format === 'league'){
+    const g = Math.max(1, Math.floor(names.length / s.groupSize));
+    if(names.length < 3) return alertBox('조별 리그를 하기엔 적어요', '3명 이상이거나 "바로 토너먼트"를 골라 주세요.');
+    if(g * s.advance < 2) return alertBox('본선 진출자가 1명뿐이에요', '조별 진출을 1·2위로 바꾸거나 조 인원을 줄여 주세요.');
+  }
+  const go = () => makeTournament(names, s, $('tName').value.trim() || '우리 반 오목 토너먼트');
+  if(T) confirmBox('새 대회를 만들까요?', '진행 중인 대회는 지워져요. (필요하면 먼저 백업해 두세요)', go); else go();
+};
+$('btnPractice').onclick = () => {
+  openModal(`<h2>둘이서 연습</h2><p>두 사람 이름을 적어 주세요. (기록에 남지 않아요)</p>
+    <div class="row" style="justify-content:center"><span class="dot b"></span><input id="pb" value="흑" style="width:160px"></div>
+    <div class="row" style="justify-content:center"><span class="dot w"></span><input id="pw" value="백" style="width:160px"></div>
+    <div class="pickrow" style="margin-top:14px"><button class="ghost" id="mNo">취소</button><button id="mYes">시작</button></div>`);
+  $('mNo').onclick = closeModal;
+  $('mYes').onclick = () => { const b = $('pb').value.trim() || '흑', w = $('pw').value.trim() || '백'; closeModal(); startGame({black: b, white: w, ref: null, settings: readSettings()}); };
+};
+$('btnAI').onclick = () => {
+  openModal(`<h2>🤖 컴퓨터와 연습</h2><p>실력을 고르고 내 돌 색을 정해요.</p>
+    <div class="row" style="justify-content:center"><input id="pme" value="나" style="width:150px" placeholder="내 이름"></div>
+    <div class="row" style="justify-content:center"><select id="plv"><option value="easy">쉬움 (처음 배우는 친구)</option><option value="normal" selected>보통</option><option value="hard">어려움 (도전!)</option></select></div>
+    <div class="row" style="justify-content:center"><select id="pcol"><option value="1">내가 흑 (먼저)</option><option value="2">내가 백 (나중)</option></select></div>
+    <div class="pickrow" style="margin-top:14px"><button class="ghost" id="mNo">취소</button><button id="mYes">시작</button></div>`);
+  $('mNo').onclick = closeModal;
+  $('mYes').onclick = () => {
+    const me = $('pme').value.trim() || '나', lv = $('plv').value, col = +$('pcol').value;
+    const lvName = {easy:'쉬움', normal:'보통', hard:'어려움'}[lv], bot = `컴퓨터(${lvName})`;
+    closeModal();
+    const s = readSettings(); s.undo = -1; s.time = 0; s.tap = s.tap;
+    startGame({black: col === 1 ? me : bot, white: col === 1 ? bot : me, ref: null, settings: s, ai: {color: 3 - col, level: lv}});
+  };
+};
+function helpBox(){
+  const s = G ? G.settings : (OG && OG.g ? Object.assign({}, OG.g.rules, {time: OG.g.time}) : (T ? T.settings : readSettings()));
+  openModal(`<h2>❓ 오목 규칙</h2><div class="help">
+    <h3>⚫ 이기는 방법</h3>가로·세로·대각선으로 같은 색 돌을 <b>다섯 개 이상</b> 먼저 이으면 이겨요. 흑이 먼저 둡니다.
+    <h3>🚫 쌍삼(3·3) ${s.no33 ? '<b style="color:var(--accent)">금지</b>' : '허용'}</h3>한 수로 <b>양쪽이 열린 3</b>을 두 줄 동시에 만들면 상대가 막을 수 없어서 금지해요. 금지된 자리에 두면 화면이 알려 줘요. 단, 그 수로 바로 다섯을 만들면 둘 수 있어요.
+    <h3>🚫 사사(4·4) ${s.no44 ? '<b style="color:var(--accent)">금지</b>' : '허용'}</h3>한 수로 <b>4</b>를 두 줄 동시에 만드는 수예요.
+    <h3>⏱ 시간</h3>${s.time ? `한 수에 ${s.time}초. 시간이 지나면 차례가 상대에게 넘어가요.` : '시간 제한이 없어요.'}
+    <h3>🤝 예절</h3>시작 전 "잘 부탁해", 끝나고 "고마워" 인사하기. 이긴 친구는 진 친구에게 좋았던 수를 하나 말해 주기!
+  </div><div class="btns"><button id="mOk">알겠어요</button></div>`);
+  $('mOk').onclick = closeModal;
+}
+$('btnHelp').onclick = helpBox;
+$('btnStudent').onclick = () => renderJoin(''); $('btnHelp2').onclick = helpBox;
+
+/* ================= 백업 ================= */
+function backupMenu(){
+  const code = JSON.stringify(T);
+  openModal(`<h2>💾 백업</h2><p>이 코드를 복사해서 메모장이나 메신저에 보관하세요. 다른 컴퓨터의 "백업 불러오기"에 붙여 넣으면 그대로 이어서 할 수 있어요.</p>
+    <textarea id="bk" readonly>${esc(code)}</textarea>
+    <div class="pickrow" style="margin-top:12px"><button class="ghost" id="mNo">닫기</button><button id="mCopy">📋 코드 복사</button></div>`, true);
+  $('mNo').onclick = closeModal;
+  $('mCopy').onclick = async () => { if(!(await copyText(code))){ $('bk').select(); toast('Ctrl+C로 복사해 주세요'); } };
+}
+$('btnRestore').onclick = () => {
+  openModal(`<h2>📂 백업 불러오기</h2><p>저장해 둔 백업 코드를 붙여 넣으세요.</p><textarea id="bk"></textarea>
+    <div class="pickrow" style="margin-top:12px"><button class="ghost" id="mNo">취소</button><button id="mYes">불러오기</button></div>`, true);
+  $('mNo').onclick = closeModal;
+  $('mYes').onclick = () => {
+    let d = null; try{ d = JSON.parse($('bk').value.trim()); }catch(e){}
+    if(!d || !Array.isArray(d.players) || !d.settings || !('rounds' in d)) { toast('올바른 백업 코드가 아니에요'); return; }
+    T = d; save(); closeModal(); applySettings(T.settings); $('tName').value = T.name; tab = null; show('bracketView'); toast('불러왔어요!');
+  };
+};
+
+/* ================= 대회 만들기 ================= */
+function seedOrder(size){
+  let o = [1];
+  while(o.length < size){ const n = o.length * 2; o = o.flatMap(s => [s, n + 1 - s]); }
+  return o;
+}
+function emptyMatch(){ return {a:null, b:null, winner:null, black:null, rec:null}; }
+function buildBracket(list){
+  // list: 시드 순서대로 (1번 시드가 가장 강함 / 부전승 우선)
+  const n = list.length; let size = 1; while(size < n) size *= 2;
+  if(size < 2) size = 2;
+  const pos = seedOrder(size), first = [];
+  for(let i = 0; i < size / 2; i++){
+    const s1 = pos[2*i], s2 = pos[2*i+1], m = emptyMatch();
+    const [lo, hi] = s1 < s2 ? [s1, s2] : [s2, s1];
+    m.a = list[lo - 1]; m.b = hi <= n ? list[hi - 1] : BYE;
+    first.push(m);
+  }
+  const rounds = [first];
+  for(let s = size / 4; s >= 1; s /= 2) rounds.push(Array.from({length: s}, emptyMatch));
+  return rounds;
+}
+function roundRobin(players){
+  const p = players.slice(); if(p.length % 2) p.push(null);
+  const n = p.length, out = [];
+  for(let r = 0; r < n - 1; r++){
+    for(let i = 0; i < n / 2; i++){ const a = p[i], b = p[n - 1 - i]; if(a && b) out.push(Object.assign(emptyMatch(), {a, b})); }
+    p.splice(1, 0, p.pop());
+  }
+  return out;
+}
+async function makeTournament(players, settings, name, keepRoom){
+  const prevCode = keepRoom && T && T.online ? T.online.code : null;
+  const list = settings.shuffle ? shuffle(players) : players.slice();
+  T = { name, players: players.slice(), settings: Object.assign({}, settings), groups: null, rounds: null, third: null, lots: {}, stage: 'main', seq: 0, online: null };
+  list.forEach(p => T.lots[p] = Math.random());
+  if(settings.format === 'league'){
+    const gc = Math.max(1, Math.floor(list.length / settings.groupSize));
+    const gp = Array.from({length: gc}, () => []);
+    list.forEach((p, i) => { const row = Math.floor(i / gc), col = i % gc; gp[row % 2 ? gc - 1 - col : col].push(p); });
+    T.groups = gp.map((ps, i) => ({ name: String.fromCharCode(65 + i) + '조', players: ps, matches: roundRobin(ps) }));
+    T.stage = 'group';
+  } else {
+    setupMain(list);
+  }
+  if(settings.mode === 'online'){
+    await DB.ready;
+    if(prevCode){ net.code = prevCode; await DB.remove(`rooms/${prevCode}/games`); }
+    T.online = { code: prevCode || await newRoomCode() };
+    net.role = 'host'; net.code = T.online.code;
+  } else { netStop(); net.role = null; T.online = null; }
+  save(); tab = null;
+  if(T.online) await hostConnect();
+  show('bracketView');
+  if(T.online && !prevCode) studentGuide();
+}
+function setupMain(seedList){
+  T.rounds = buildBracket(seedList);
+  T.third = (T.settings.third && T.rounds.length >= 2) ? emptyMatch() : null;
+  T.rounds[0].forEach((m, i) => { if(m.b === BYE){ m.winner = m.a; advance(0, i); } });
+  T.stage = 'main';
+}
+
+/* ================= 경기 참조 ================= */
+// ref: {k:'g', g, i} | {k:'b', r, i} | {k:'3'}
+function getMatch(ref){
+  if(ref.k === 'g') return T.groups[ref.g].matches[ref.i];
+  if(ref.k === 'b') return T.rounds[ref.r][ref.i];
+  return T.third;
+}
+function roundName(r){
+  const left = T.rounds.length - r;
+  if(left === 1) return '결승'; if(left === 2) return '준결승';
+  return `${Math.pow(2, left)}강`;
+}
+function stageName(ref){
+  if(ref.k === 'g') return `조별 리그 ${T.groups[ref.g].name}`;
+  if(ref.k === 'b') return (T.groups ? '본선 ' : '') + roundName(ref.r);
+  return '3위 결정전';
+}
+function advance(r, i){
+  const m = T.rounds[r][i];
+  if(r + 1 < T.rounds.length){
+    const next = T.rounds[r+1][Math.floor(i/2)];
+    if(i % 2 === 0) next.a = m.winner; else next.b = m.winner;
+  }
+  if(T.third && r === T.rounds.length - 2){
+    const loser = m.winner === m.a ? m.b : m.a;
+    if(i === 0) T.third.a = loser; else T.third.b = loser;
+  }
+}
+function canClear(ref){
+  if(ref.k === 'g') return T.stage === 'group' ? '' : '본선이 이미 시작되어서 조별 리그 결과는 바꿀 수 없어요.';
+  if(ref.k === '3') return '';
+  const {r, i} = ref;
+  if(r + 1 < T.rounds.length && T.rounds[r+1][Math.floor(i/2)].winner) return '다음 경기가 이미 끝났어요. 다음 경기 결과부터 먼저 취소해 주세요.';
+  if(T.third && r === T.rounds.length - 2 && T.third.winner) return '3위 결정전이 이미 끝났어요. 3위 결정전 결과부터 먼저 취소해 주세요.';
+  return '';
+}
+function clearResult(ref){
+  const m = getMatch(ref);
+  if(ref.k === 'b'){
+    const {r, i} = ref;
+    if(r + 1 < T.rounds.length){ const next = T.rounds[r+1][Math.floor(i/2)]; if(i % 2 === 0) next.a = null; else next.b = null; next.black = null; }
+    if(T.third && r === T.rounds.length - 2){ if(i === 0) T.third.a = null; else T.third.b = null; T.third.black = null; }
+  }
+  m.winner = null; m.black = null; m.rec = null;
+  if(T.online && net.role === 'host') DB.remove(roomPath('games/' + refKey(ref)));
+}
+function setResult(ref, winner, rec){
+  const m = getMatch(ref);
+  m.winner = winner; m.rec = Object.assign({at: Date.now(), seq: ++T.seq}, rec);
+  if(ref.k === 'b') advance(ref.r, ref.i);
+  save();
+  const isFinal = ref.k === 'b' && ref.r === T.rounds.length - 1;
+  if(ref.k === 'g') tab = 'groups';
+  else if(tab !== 'main') tab = 'main';
+  show('bracketView');
+  if(isFinal){
+    confetti(); Snd.play('champ');
+    openModal(`<div style="font-size:70px">🏆</div><h2>우승을 축하해요!</h2><div class="vsbig" style="font-size:38px;color:var(--accent)">${esc(winner)}</div><p>${esc(T.name)} 챔피언</p>${T.third && !T.third.winner ? '<p>3위 결정전이 남아 있어요!</p>' : ''}<div class="btns"><button id="mOk">확인</button></div>`);
+    $('mOk').onclick = closeModal;
+  } else if(ref.k === 'g' && groupStageDone()){
+    alertBox('🎉 조별 리그 끝!', '모든 조 경기가 끝났어요. 위쪽의 "본선 토너먼트 시작" 버튼을 눌러 주세요.');
+  }
+}
+
+/* ================= 조별 리그 ================= */
+function standings(gi){
+  const grp = T.groups[gi], st = {};
+  grp.players.forEach(p => st[p] = {name: p, w: 0, l: 0, gp: 0});
+  grp.matches.forEach(m => { if(!m.winner) return; const lo = m.winner === m.a ? m.b : m.a; st[m.winner].w++; st[m.winner].gp++; st[lo].l++; st[lo].gp++; });
+  const h2h = (a, b) => { const m = grp.matches.find(x => x.winner && ((x.a === a && x.b === b) || (x.a === b && x.b === a))); return m ? (m.winner === a ? -1 : 1) : 0; };
+  const arr = Object.values(st);
+  arr.sort((a, b) => {
+    if(b.w !== a.w) return b.w - a.w;
+    if(a.l !== b.l) return a.l - b.l;
+    const tied = arr.filter(x => x.w === a.w && x.l === a.l);
+    if(tied.length === 2){ const h = h2h(a.name, b.name); if(h) return h; }
+    return T.lots[b.name] - T.lots[a.name];
+  });
+  return arr;
+}
+function groupDone(gi){ return T.groups[gi].matches.every(m => m.winner); }
+function groupStageDone(){ return T.groups && T.groups.every((g, i) => groupDone(i)); }
+function startMain(){
+  const firsts = [], seconds = [];
+  T.groups.forEach((g, i) => { const s = standings(i); firsts.push(s[0].name); if(T.settings.advance >= 2 && s[1]) seconds.push(s[1].name); });
+  const seeds = firsts.concat(seconds.reverse());
+  setupMain(seeds); save(); tab = 'main'; show('bracketView');
+  toast('본선 대진표를 만들었어요!');
+}
+function renderGroups(){
+  const box = $('tabGroups');
+  if(!T.groups){ box.innerHTML = ''; return; }
+  let html = '';
+  if(T.stage === 'group'){
+    const left = T.groups.reduce((n, g) => n + g.matches.filter(m => !m.winner).length, 0);
+    html += groupStageDone()
+      ? `<div class="banner"><span>🎉 조별 리그가 모두 끝났어요! 각 조 ${T.settings.advance === 2 ? '1·2위' : '1위'}가 본선에 올라가요.</span>${net.role === 'student' ? '<span>선생님이 곧 본선을 시작해요!</span>' : '<button id="btnStartMain">🏆 본선 토너먼트 시작</button>'}</div>`
+      : `<p class="legend">초록 테두리 경기를 눌러 대국하세요. 남은 경기 <b>${left}</b>개 · 같은 승수면 승자승 → 추첨 순서로 순위를 정해요.</p>`;
+  } else html += `<p class="legend">조별 리그가 끝났어요. 진출자는 초록색으로 표시돼요.</p>`;
+  html += '<div class="groups">';
+  T.groups.forEach((g, gi) => {
+    const st = standings(gi), done = groupDone(gi), played = g.matches.filter(m => m.winner).length;
+    html += `<div class="group ${done ? 'complete' : ''}"><h3>${g.name}<small>${played}/${g.matches.length} 경기</small></h3>
+      <table><tr><th>순위</th><th class="l">이름</th><th>승</th><th>패</th><th>경기</th></tr>`;
+    st.forEach((s, k) => {
+      const adv = done && k < T.settings.advance;
+      html += `<tr class="${adv ? 'adv' : ''}"><td>${k + 1}</td><td class="l">${esc(s.name)}${adv ? '<span class="badge">진출</span>' : ''}</td><td>${s.w}</td><td>${s.l}</td><td>${s.gp}</td></tr>`;
+    });
+    html += `</table><div class="gm">`;
+    g.matches.forEach((m, i) => {
+      const cls = m.winner ? 'done' : 'ready';
+      const nm = p => m.winner ? (m.winner === p ? `<b class="w">${esc(p)} 🏅</b>` : `<s>${esc(p)}</s>`) : esc(p);
+      const dot = p => m.black ? `<span class="dot ${m.black === p ? 'b' : 'w'}"></span>` : '';
+      const lg = liveGame({k:'g', g: gi, i});
+      html += `<div class="m ${cls}" data-g="${gi}" data-i="${i}"><span class="vs">${dot(m.a)}${nm(m.a)} <span style="color:var(--sub)">vs</span> ${dot(m.b)}${nm(m.b)}</span>${m.winner ? `<small style="color:var(--sub)">${recShort(m.rec)}</small>` : lg ? `<small class="live">📡 ${lg.moves.length}수 관전</small>` : '<small style="color:var(--accent2)">▶</small>'}</div>`;
+    });
+    html += `</div></div>`;
+  });
+  html += '</div>';
+  box.innerHTML = html;
+  box.querySelectorAll('.gm .m').forEach(el => el.onclick = () => {
+    const ref = {k:'g', g: +el.dataset.g, i: +el.dataset.i};
+    getMatch(ref).winner ? editMenu(ref) : matchMenu(ref);
+  });
+  const sb = $('btnStartMain'); if(sb) sb.onclick = startMain;
+}
+function recShort(rec){
+  if(!rec) return '';
+  if(rec.method === 'five') return `${rec.moves.length}수`;
+  if(rec.method === 'resign') return '기권';
+  return '직접 기록';
+}
+
+/* ================= 본선 대진표 ================= */
+function renderBracket(){
+  const el = $('bracket'); el.innerHTML = '';
+  if(!T.rounds){
+    el.innerHTML = `<p class="legend">조별 리그가 끝나면 본선 대진표가 만들어져요.</p>`; return;
+  }
+  const nodes = {}; let num = 0;
+  T.rounds.forEach((round, r) => {
+    const col = document.createElement('div'); col.className = 'round';
+    col.innerHTML = `<h3>${roundName(r)}</h3>`;
+    const slots = document.createElement('div'); slots.className = 'slots';
+    round.forEach((m, i) => {
+      let card;
+      if(r === 0 && m.b === BYE){
+        card = document.createElement('div'); card.className = 'match byecard';
+        card.innerHTML = `<div class="p win"><span class="dot n"></span>${esc(m.a)}</div><div class="p wait"><span class="dot n"></span>부전승</div>`;
+      } else {
+        num++;
+        card = matchCard(m, {k:'b', r, i}, num);
+      }
+      nodes[`${r}-${i}`] = card;
+      slots.appendChild(card);
+    });
+    col.appendChild(slots); el.appendChild(col);
+  });
+  const final = T.rounds[T.rounds.length - 1][0];
+  const c = document.createElement('div'); c.className = 'round champ';
+  let podium = '';
+  if(final.winner){
+    const second = final.winner === final.a ? final.b : final.a;
+    podium = `<div class="podium"><span>🥈 준우승 <b>${esc(second)}</b></span>${T.third && T.third.winner ? `<span>🥉 3위 <b>${esc(T.third.winner)}</b></span>` : ''}</div>`;
+  }
+  c.innerHTML = final.winner
+    ? `<div class="trophy" id="champNode">🏆</div><div class="jua" style="color:var(--sub)">우승</div><div class="name">${esc(final.winner)}</div>${podium}`
+    : `<div class="trophy" id="champNode" style="opacity:.25">🏆</div><div class="jua" style="color:var(--sub)">우승은 누구?</div>`;
+  if(T.third){
+    const tb = document.createElement('div'); tb.className = 'third-box';
+    tb.innerHTML = '<h4>🥉 3위 결정전</h4>';
+    tb.appendChild(matchCard(T.third, {k:'3'}, null));
+    c.appendChild(tb);
+  }
+  el.appendChild(c);
+  requestAnimationFrame(() => drawLines(nodes));
+}
+function matchCard(m, ref, num){
+  const d = document.createElement('div');
+  const ready = m.a && m.b && !m.winner;
+  d.className = 'match' + (ready ? ' ready' : '') + (m.winner ? ' done' : '');
+  const line = p => {
+    if(!p) return `<div class="p wait"><span class="dot n"></span>기다리는 중</div>`;
+    const cls = m.winner ? (m.winner === p ? 'win' : 'lose') : '';
+    const dot = m.black ? (m.black === p ? 'b' : 'w') : 'n';
+    return `<div class="p ${cls}"><span class="dot ${dot}"></span>${esc(p)}${m.winner === p ? ' 🏅' : ''}</div>`;
+  };
+  const lg = liveGame(ref);
+  d.innerHTML = (num ? `<span class="num">${num}경기</span>` : '') + line(m.a) + line(m.b) + (lg ? `<div class="meta live">📡 대국 중 · ${lg.moves.length}수 · 눌러서 관전</div>` : '') + (m.rec ? `<div class="meta">${recShort(m.rec)}${m.rec.moves ? ' · 기보 보기' : ''}</div>` : '');
+  if(ready) d.onclick = () => matchMenu(ref);
+  else if(m.winner) d.onclick = () => editMenu(ref);
+  return d;
+}
+function drawLines(nodes){
+  const el = $('bracket'); if(!el.offsetParent) return;
+  const old = el.querySelector('svg.lines'); if(old) old.remove();
+  const base = el.getBoundingClientRect();
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'lines'); svg.setAttribute('width', el.scrollWidth); svg.setAttribute('height', el.scrollHeight);
+  const path = (from, to, hot) => {
+    if(!from || !to) return;
+    const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+    const x1 = a.right - base.left, y1 = a.top + a.height / 2 - base.top, x2 = b.left - base.left, y2 = b.top + b.height / 2 - base.top, mx = (x1 + x2) / 2;
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', `M${x1},${y1} H${mx} V${y2} H${x2}`);
+    p.setAttribute('fill', 'none'); p.setAttribute('stroke', hot ? '#2f6f62' : '#d8c8ad'); p.setAttribute('stroke-width', hot ? 3 : 2);
+    svg.appendChild(p);
+  };
+  for(let r = 1; r < T.rounds.length; r++){
+    T.rounds[r].forEach((m, i) => {
+      [2*i, 2*i+1].forEach(fi => { const f = T.rounds[r-1][fi]; path(nodes[`${r-1}-${fi}`], nodes[`${r}-${i}`], !!f.winner); });
+    });
+  }
+  const fin = T.rounds[T.rounds.length - 1][0];
+  path(nodes[`${T.rounds.length - 1}-0`], $('champNode'), !!fin.winner);
+  el.prepend(svg);
+}
+let rsTimer = null;
+try{ document.fonts.ready.then(() => { if(T && tab === 'main' && !$('bracketView').classList.contains('hidden')) renderBracket(); }); }catch(e){}
+window.addEventListener('resize', () => { clearTimeout(rsTimer); rsTimer = setTimeout(() => { if(!$('bracketView').classList.contains('hidden') && tab === 'main') renderBracket(); }, 150); });
+
+/* ================= 기록·통계 ================= */
+function allMatches(){
+  const out = [];
+  if(T.groups) T.groups.forEach((g, gi) => g.matches.forEach((m, i) => out.push({ref:{k:'g', g: gi, i}, m})));
+  if(T.rounds) T.rounds.forEach((rd, r) => rd.forEach((m, i) => { if(m.b !== BYE) out.push({ref:{k:'b', r, i}, m}); }));
+  if(T.third) out.push({ref:{k:'3'}, m: T.third});
+  return out;
+}
+function renderRecords(){
+  const done = allMatches().filter(x => x.m.winner && x.m.rec).sort((a, b) => a.m.rec.seq - b.m.rec.seq);
+  const st = {};
+  T.players.forEach(p => st[p] = {name: p, gp: 0, w: 0, l: 0, best: null, stones: 0});
+  done.forEach(({m}) => {
+    const lo = m.winner === m.a ? m.b : m.a;
+    st[m.winner].gp++; st[m.winner].w++; st[lo].gp++; st[lo].l++;
+    if(m.rec.method === 'five'){ const n = m.rec.moves.length; if(st[m.winner].best === null || n < st[m.winner].best) st[m.winner].best = n; }
+  });
+  const arr = Object.values(st).sort((a, b) => b.w - a.w || a.l - b.l || a.name.localeCompare(b.name, 'ko'));
+  const fastest = done.filter(x => x.m.rec.method === 'five').sort((a, b) => a.m.rec.moves.length - b.m.rec.moves.length)[0];
+  const longest = done.filter(x => x.m.rec.method === 'five').sort((a, b) => b.m.rec.moves.length - a.m.rec.moves.length)[0];
+  let html = `<div class="row" style="margin-top:0"><button class="ghost sm" id="btnCopyRec">📋 결과를 표로 복사 (스프레드시트에 붙여넣기)</button>
+    ${fastest ? `<span class="count">⚡ 최단 승리: <b>${esc(fastest.m.winner)}</b> ${fastest.m.rec.moves.length}수</span>` : ''}
+    ${longest && longest !== fastest ? `<span class="count">🔥 최장 대국: ${esc(longest.m.a)} vs ${esc(longest.m.b)} ${longest.m.rec.moves.length}수</span>` : ''}</div>
+    <div class="recgrid"><div class="card"><h3>👤 개인 기록</h3><table><tr><th>순</th><th class="l">이름</th><th>경기</th><th>승</th><th>패</th><th>승률</th><th>최단 승리</th></tr>`;
+  arr.forEach((s, k) => html += `<tr><td>${k+1}</td><td class="l">${esc(s.name)}</td><td>${s.gp}</td><td>${s.w}</td><td>${s.l}</td><td>${s.gp ? Math.round(s.w / s.gp * 100) + '%' : '-'}</td><td>${s.best ? s.best + '수' : '-'}</td></tr>`);
+  html += `</table></div><div class="card"><h3>📜 경기 기록 (${done.length}경기)</h3>`;
+  if(!done.length) html += `<p class="legend">아직 끝난 경기가 없어요.</p>`;
+  else {
+    html += `<table><tr><th>#</th><th>단계</th><th class="l">대결</th><th>승자</th><th>결과</th><th></th></tr>`;
+    done.forEach(({ref, m}, k) => {
+      const black = m.rec.black || m.black, white = black ? (black === m.a ? m.b : m.a) : null;
+      const vs = black ? `<span class="dot b"></span> ${esc(black)} vs <span class="dot w"></span> ${esc(white)}` : `${esc(m.a)} vs ${esc(m.b)}`;
+      html += `<tr><td>${k+1}</td><td>${stageName(ref)}</td><td class="l">${vs}</td><td><b>${esc(m.winner)}</b></td><td>${recShort(m.rec)}</td>
+        <td>${m.rec.moves && m.rec.moves.length ? `<button class="ghost sm rp" data-k="${k}">기보</button>` : ''}</td></tr>`;
+    });
+    html += `</table>`;
+  }
+  html += `</div></div>`;
+  $('tabRecords').innerHTML = html;
+  $('tabRecords').querySelectorAll('button.rp').forEach(b => b.onclick = () => { const {ref, m} = done[+b.dataset.k]; openReplay(m, stageName(ref)); });
+  $('btnCopyRec').onclick = async () => {
+    const lines = ['순번\t단계\t흑(선수1)\t백(선수2)\t승자\t결과'];
+    done.forEach(({ref, m}, k) => { const black = m.rec.black || m.black || m.a, white = black === m.a ? m.b : m.a; lines.push([k+1, stageName(ref), black, white, m.winner, recShort(m.rec)].join('\t')); });
+    lines.push('', '이름\t경기\t승\t패\t최단 승리');
+    arr.forEach(s => lines.push([s.name, s.gp, s.w, s.l, s.best || ''].join('\t')));
+    const text = lines.join('\n');
+    if(!(await copyText(text))){
+      openModal(`<h2>복사할 내용</h2><p>아래를 전체 선택해서 복사해 주세요.</p><textarea id="cp">${esc(text)}</textarea><div class="btns"><button id="mOk">닫기</button></div>`, true);
+      $('cp').select(); $('mOk').onclick = closeModal;
+    }
+  };
+}
+
+/* ================= 대회 화면 ================= */
+function renderTournament(){
+  if(!T) return;
+  const tabs = [];
+  if(T.groups) tabs.push(['groups', '📋 조별 리그']);
+  tabs.push(['main', T.groups ? '🏆 본선 토너먼트' : '🏆 대진표']);
+  tabs.push(['records', '📊 기록·통계']);
+  if(T.online && net.role === 'host') tabs.push(['live', `📺 관전 (${Object.values(net.games).filter(g => g.status === 'playing').length})`]);
+  if(!tab || !tabs.find(t => t[0] === tab)) tab = (T.groups && T.stage === 'group') ? 'groups' : 'main';
+  $('tabs').innerHTML = tabs.map(([k, l]) => `<button class="${k === tab ? 'on' : ''}" data-t="${k}">${l}</button>`).join('');
+  $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => { tab = b.dataset.t; renderTournament(); });
+  $('tabGroups').classList.toggle('hidden', tab !== 'groups');
+  $('tabMain').classList.toggle('hidden', tab !== 'main');
+  $('tabRecords').classList.toggle('hidden', tab !== 'records');
+  $('tabLive').classList.toggle('hidden', tab !== 'live');
+  if(tab === 'live') renderLive();
+  if(tab === 'groups') renderGroups();
+  if(tab === 'main') renderBracket();
+  if(tab === 'records') renderRecords();
+  $('title').textContent = T.name;
+}
+
+/* ================= 경기 메뉴 ================= */
+function matchMenu(ref){
+  const m = getMatch(ref), lg = liveGame(ref);
+  if(lg){ openOnline(lg.key); return; }
+  if(net.role === 'student') return;
+  openModal(`<h2>${stageName(ref)}</h2>
+    <div class="vsbig">${esc(m.a)} <span class="v">VS</span> ${esc(m.b)}</div>
+    <div class="btns">
+      ${T.online ? '<p class="warnbox" style="margin:0">📱 온라인 대회예요. 두 학생 중 한 명이 자기 태블릿에서 "대국 시작"을 누르면 돼요. 아래는 교실 화면에서 직접 둘 때만 쓰세요.</p>' : ''}
+      <button class="big" id="mPlay">⚫ 화면에서 대국하기</button>
+      <button class="ghost" id="mManual">✍ 승자만 기록하기 (실제 오목판에서 둔 경우)</button>
+      <button class="ghost" id="mNo">취소</button>
+    </div>`);
+  $('mNo').onclick = closeModal;
+  $('mManual').onclick = () => pickWinner(ref);
+  $('mPlay').onclick = () => chooseColor(ref);
+}
+function chooseColor(ref){
+  const m = getMatch(ref), mode = T.settings.black;
+  const start = black => { m.black = black; save(); closeModal(); startGame({black, white: black === m.a ? m.b : m.a, ref, settings: T.settings}); };
+  if(mode === 'top') return start(m.a);
+  if(mode === 'random'){
+    const black = Math.random() < .5 ? m.a : m.b;
+    openModal(`<h2>🎲 흑돌 추첨</h2><div class="vsbig"><span class="dot b" style="width:30px;height:30px"></span> <span id="roll">${esc(m.a)}</span></div><p>흑이 먼저 둡니다.</p><div class="btns"><button id="mGo" disabled>대국 시작!</button></div>`);
+    let t = 0; const iv = setInterval(() => { const el = $('roll'); if(!el){ clearInterval(iv); return; } el.textContent = (t++ % 2 ? m.a : m.b); Snd.play('tick'); }, 90);
+    setTimeout(() => { clearInterval(iv); const el = $('roll'); if(!el) return; el.textContent = black; $('mGo').disabled = false; Snd.play('stone'); }, 1300);
+    $('mGo').onclick = () => start(black);
+    return;
+  }
+  openModal(`<h2>누가 흑(선공)인가요?</h2><div class="btns"><button id="mA">⚫ ${esc(m.a)}</button><button id="mB">⚫ ${esc(m.b)}</button><button class="ghost" id="mNo">취소</button></div>`);
+  $('mA').onclick = () => start(m.a); $('mB').onclick = () => start(m.b); $('mNo').onclick = closeModal;
+}
+function pickWinner(ref){
+  const m = getMatch(ref);
+  openModal(`<h2>누가 이겼나요?</h2><div class="btns"><button id="mA">🏅 ${esc(m.a)}</button><button id="mB">🏅 ${esc(m.b)}</button><button class="ghost" id="mNo">취소</button></div>`);
+  $('mA').onclick = () => { closeModal(); setResult(ref, m.a, {method: 'manual', moves: null}); };
+  $('mB').onclick = () => { closeModal(); setResult(ref, m.b, {method: 'manual', moves: null}); };
+  $('mNo').onclick = closeModal;
+}
+function editMenu(ref){
+  const m = getMatch(ref);
+  const hasRp = m.rec && m.rec.moves && m.rec.moves.length;
+  if(net.role === 'student'){ if(hasRp) openReplay(m, stageName(ref)); return; }
+  openModal(`<h2>${stageName(ref)} 결과</h2><div class="vsbig">${esc(m.a)} <span class="v">VS</span> ${esc(m.b)}</div><p>승자: <b>${esc(m.winner)}</b> · ${recShort(m.rec)}</p>
+    <div class="btns">${hasRp ? '<button id="mRp">🎞 기보 다시 보기</button>' : ''}<button class="red" id="mUndo">결과 취소하고 다시 하기</button><button class="ghost" id="mNo">닫기</button></div>`);
+  $('mNo').onclick = closeModal;
+  if(hasRp) $('mRp').onclick = () => openReplay(m, stageName(ref));
+  $('mUndo').onclick = () => {
+    const why = canClear(ref);
+    if(why) return alertBox('취소할 수 없어요', why);
+    confirmBox('결과를 취소할까요?', `${esc(m.a)} vs ${esc(m.b)} 경기를 다시 해야 해요.`, () => { clearResult(ref); save(); renderTournament(); }, '취소하기');
+  };
+}
+
+/* ================= 기보 다시 보기 ================= */
+const rp = { iv: null };
+function openReplay(m, title){
+  const rec = m.rec, N = rec.size || 15, black = rec.black || m.black, white = black === m.a ? m.b : m.a;
+  openModal(`<h2>🎞 ${title}</h2><p><span class="dot b"></span> ${esc(black)} vs <span class="dot w"></span> ${esc(white)} · 승자 <b>${esc(m.winner)}</b></p>
+    <canvas id="rpCanvas" width="900" height="900"></canvas>
+    <div class="rpctl"><button class="ghost sm" id="rpFirst">⏮</button><button class="ghost sm" id="rpPrev">◀</button>
+      <input type="range" id="rpRange" min="0" max="${rec.moves.length}" value="${rec.moves.length}">
+      <button class="ghost sm" id="rpNext">▶</button><button class="ghost sm" id="rpLast">⏭</button><button class="sm" id="rpPlay">▶ 재생</button></div>
+    <div class="rpctl"><span id="rpLbl" class="count"></span><label class="count"><input type="checkbox" id="rpNums" checked style="width:16px;height:16px;vertical-align:middle"> 수 번호</label></div>
+    <div class="btns"><button class="ghost" id="mNo">닫기</button></div>`, true);
+  const cv = $('rpCanvas');
+  const render = () => {
+    const k = +$('rpRange').value, grid = Array.from({length: N}, () => Array(N).fill(0)), mv = [];
+    for(let i = 0; i < k; i++){ const [x, y, cc] = rec.moves[i], c = cc || (i % 2 ? 2 : 1); grid[y][x] = c; mv.push({x, y, c}); }
+    let win = null;
+    if(k === rec.moves.length && rec.method === 'five' && k){ const l = mv[k-1]; win = fiveLine(grid, N, l.x, l.y, l.c); }
+    drawBoard(cv, {N, grid, moves: mv, nums: $('rpNums').checked, winLine: win});
+    $('rpLbl').textContent = `${k} / ${rec.moves.length}수`;
+  };
+  const go = k => { $('rpRange').value = Math.max(0, Math.min(rec.moves.length, k)); render(); };
+  $('rpRange').oninput = render; $('rpNums').onchange = render;
+  $('rpFirst').onclick = () => go(0); $('rpLast').onclick = () => go(rec.moves.length);
+  $('rpPrev').onclick = () => go(+$('rpRange').value - 1); $('rpNext').onclick = () => go(+$('rpRange').value + 1);
+  $('rpPlay').onclick = () => {
+    if(rp.iv){ clearInterval(rp.iv); rp.iv = null; $('rpPlay').textContent = '▶ 재생'; return; }
+    if(+$('rpRange').value >= rec.moves.length) go(0);
+    $('rpPlay').textContent = '⏸ 멈춤';
+    rp.iv = setInterval(() => { const k = +$('rpRange').value + 1; go(k); Snd.play('stone'); if(k >= rec.moves.length){ clearInterval(rp.iv); rp.iv = null; $('rpPlay').textContent = '▶ 재생'; } }, 650);
+  };
+  $('mNo').onclick = closeModal;
+  render();
+}
+
+/* ================= 대국 ================= */
+const cv = $('board');
+let timerIv = null, aiTimer = null;
+function undoLimit(s){ return s.undo === undefined ? -1 : s.undo; }
+function saveGame(){ if(!G) return; const {hover, ...rest} = G; store.set('omok_game', rest); }
+function clearGame(){ store.del('omok_game'); }
+function setGameLabels(){
+  $('nBlack').textContent = G.names[1]; $('nWhite').textContent = G.names[2];
+  const s = G.settings, lim = undoLimit(s);
+  $('ruleInfo').innerHTML = `다섯 개 이상 연속이면 승리<br>쌍삼 ${s.no33 ? '금지' : '허용'} · 사사 ${s.no44 ? '금지' : '허용'}<br>${s.time ? `한 수 ${s.time}초` : '시간 제한 없음'}<br>무르기 ${lim < 0 ? '무제한' : lim === 0 ? '금지' : `1인당 ${lim}번`}`;
+  $('stageInfo').innerHTML = G.ref ? stageName(G.ref) : (G.ai ? '컴퓨터와 연습' : '연습 대국');
+  $('btnPause').classList.toggle('hidden', !s.time);
+  $('btnResign').classList.remove('hidden'); $('btnUndo').classList.remove('hidden');
+  $('btnLeave').textContent = '← 나가기';
+}
+function startGame({black, white, ref, settings, ai}){
+  const N = settings.size;
+  G = { N, grid: Array.from({length:N}, () => Array(N).fill(0)), moves: [], turn: 1, over: false, winner: null, winLine: null,
+        names: {1: black, 2: white}, ref: ref || null, settings: Object.assign({}, settings), timeLeft: settings.time, paused: false,
+        msg: '', warn: false, hover: null, pending: null, undos: {1: 0, 2: 0}, nums: false, ai: ai || null };
+  setGameLabels(); show('gameView'); updateGameUI(); draw(); startTimer(); saveGame(); maybeAI();
+}
+function resumeGame(sg){
+  G = Object.assign(sg, {hover: null, pending: null, paused: false, timeLeft: sg.settings.time});
+  setGameLabels(); show('gameView'); updateGameUI(); draw(); startTimer(); maybeAI();
+}
+function isAITurn(){ return G && G.ai && G.turn === G.ai.color && !G.over; }
+function maybeAI(){
+  clearTimeout(aiTimer);
+  if(!isAITurn()) return;
+  updateGameUI();
+  aiTimer = setTimeout(() => {
+    if(!isAITurn() || G.paused) return;
+    const p = aiPick(G.grid, G.N, G.turn, G.ai.level, G.settings);
+    if(p) place(p[0], p[1]);
+  }, 500 + Math.random() * 400);
+}
+function startTimer(){
+  clearInterval(timerIv);
+  if(!G.settings.time) return;
+  timerIv = setInterval(() => {
+    if(!G || G.over || G.paused || modalOpen() || isAITurn()) return;
+    G.timeLeft--;
+    if(G.timeLeft > 0 && G.timeLeft <= 5) Snd.play('tick');
+    if(G.timeLeft <= 0){
+      G.msg = `⏰ ${G.names[G.turn]} 시간 초과! 차례가 넘어가요.`; G.warn = true; Snd.play('bad');
+      G.turn = 3 - G.turn; G.timeLeft = G.settings.time; G.pending = null; draw(); saveGame(); maybeAI();
+    }
+    updateGameUI();
+  }, 1000);
+}
+function updateGameUI(){
+  $('pBlack').classList.toggle('turn', !G.over && G.turn === 1);
+  $('pWhite').classList.toggle('turn', !G.over && G.turn === 2);
+  const t = G.settings.time;
+  ['tBlack','tWhite'].forEach((id, k) => {
+    const el = $(id), mine = G.turn === k + 1 && !G.over && !(G.ai && G.ai.color === k + 1);
+    el.textContent = t && mine ? G.timeLeft : '';
+    el.classList.toggle('low', !!(t && mine && G.timeLeft <= 5));
+  });
+  const st = $('status');
+  if(G.over) { st.innerHTML = G.winner ? `🎉 ${esc(G.names[G.winner])} 승리!` : '무승부'; st.className = 'status'; }
+  else if(G.paused) { st.textContent = '⏸ 일시정지'; st.className = 'status'; }
+  else if(isAITurn()) { st.innerHTML = `🤖 <span class="thinking">컴퓨터가 생각 중...</span>`; st.className = 'status'; }
+  else if(G.msg) { st.textContent = G.msg; st.className = 'status' + (G.warn ? ' warn' : ''); }
+  else { st.textContent = `${G.turn === 1 ? '⚫' : '⚪'} ${G.names[G.turn]} 차례 (${G.moves.length + 1}수)`; st.className = 'status'; }
+  // 무르기
+  const lim = undoLimit(G.settings);
+  let can = !G.over && G.moves.length > 0 && !isAITurn();
+  let label = '↩ 무르기';
+  if(G.ai){
+    const human = 3 - G.ai.color; can = can && G.moves.some(m => m.c === human);
+  } else if(can){
+    const lastC = G.moves[G.moves.length - 1].c;
+    if(lim >= 0){ can = G.undos[lastC] < lim; label = `↩ 무르기 (${G.names[lastC]} ${Math.max(0, lim - G.undos[lastC])}번 남음)`; }
+  }
+  $('btnUndo').disabled = !can; $('btnUndo').textContent = label;
+  $('btnUndo').classList.toggle('hidden', lim === 0 && !G.ai);
+  $('btnResign').disabled = G.over;
+  $('btnPause').textContent = G.paused ? '▶ 계속' : '⏸ 일시정지';
+  $('btnNums').classList.toggle('on', G.nums);
+}
+function draw(){
+  if(!G) return;
+  let preview = null;
+  if(!G.over && !G.paused && !isAITurn()){
+    if(G.pending) preview = [G.pending[0], G.pending[1], G.turn, true];
+    else if(G.hover) preview = [G.hover[0], G.hover[1], G.turn, false];
+  }
+  drawBoard(cv, {N: G.N, grid: G.grid, moves: G.moves, winLine: G.winLine, nums: G.nums, preview});
+}
+cv.addEventListener('mousemove', e => { if(OG){ if(onlineCanPlay()){ const p = cellFromEvent(cv, OG.g.N, e); const k = p ? p.join() : ''; if(k !== (OG.hover ? OG.hover.join() : '')){ OG.hover = p; renderOnline(); } } return; } if(!G) return; const p = cellFromEvent(cv, G.N, e); const k = p ? p.join() : ''; if(k !== (G.hover ? G.hover.join() : '')){ G.hover = p; draw(); } });
+cv.addEventListener('mouseleave', () => { if(OG){ OG.hover = null; renderOnline(); return; } if(G){ G.hover = null; draw(); } });
+cv.addEventListener('click', e => {
+  if(OG){ onlineClick(e); return; }
+  if(!G || G.over || G.paused || isAITurn()) return;
+  const p = cellFromEvent(cv, G.N, e); if(!p) return;
+  const [x, y] = p;
+  if(G.grid[y][x]) return;
+  if(G.settings.tap && !(G.pending && G.pending[0] === x && G.pending[1] === y)){
+    G.pending = [x, y]; G.msg = '같은 자리를 한 번 더 누르면 돌을 놓아요'; G.warn = false; updateGameUI(); draw(); return;
+  }
+  place(x, y);
+});
+function place(x, y){
+  G.pending = null;
+  const j = judge(G.grid, G.N, x, y, G.turn, G.settings);
+  if(j === '33' || j === '44'){
+    G.msg = `🚫 ${j === '33' ? '쌍삼(3·3)' : '사사(4·4)'} 자리라서 둘 수 없어요!`; G.warn = true; Snd.play('bad'); updateGameUI(); draw(); return;
+  }
+  G.grid[y][x] = G.turn; G.moves.push({x, y, c: G.turn}); G.msg = ''; G.warn = false; Snd.play('stone');
+  if(j === 'five'){ G.winLine = fiveLine(G.grid, G.N, x, y, G.turn); endGame(G.turn, 'five'); return; }
+  if(G.moves.length === G.N * G.N || !hasLegalMove()){ drawGame(); return; }
+  G.turn = 3 - G.turn; G.timeLeft = G.settings.time;
+  updateGameUI(); draw(); saveGame(); maybeAI();
+}
+function hasLegalMove(){
+  const c = 3 - G.turn;
+  for(let y = 0; y < G.N; y++) for(let x = 0; x < G.N; x++) if(!G.grid[y][x]){ const j = judge(G.grid, G.N, x, y, c, G.settings); if(j !== '33' && j !== '44') return true; }
+  return false;
+}
+function drawGame(){
+  G.over = true; G.winner = 0; clearInterval(timerIv); updateGameUI(); draw(); clearGame();
+  openModal(`<h2>무승부</h2><p>더 둘 곳이 없어요. 다시 둘까요?</p><div class="btns"><button id="mRe">다시 두기</button></div>`);
+  $('mRe').onclick = () => { closeModal(); restartSame(); };
+}
+function restartSame(){ startGame({black: G.names[1], white: G.names[2], ref: G.ref, settings: G.settings, ai: G.ai}); }
+function endGame(winner, method){
+  G.over = true; G.winner = winner; G.method = method; clearInterval(timerIv); clearTimeout(aiTimer); updateGameUI(); draw(); clearGame();
+  const g = G, wn = G.names[winner];
+  setTimeout(() => {
+    if(G !== g) return;
+    const humanWon = !g.ai || winner !== g.ai.color;
+    if(humanWon){ confetti(40); Snd.play('win'); } else Snd.play('bad');
+    const inT = !!g.ref;
+    const sub = method === 'resign' ? `${esc(g.names[3 - winner])} 기권` : `${g.moves.length}수 만에 오목 완성`;
+    openModal(`<div style="font-size:56px">${g.ai && !humanWon ? '🤖' : winner === 1 ? '⚫' : '⚪'}</div><h2>${esc(wn)} 승리!</h2><p>${sub}</p>
+      ${inT ? '<p>🤝 서로 "고마워" 인사해요!</p>' : ''}
+      <div class="btns">${inT ? `<button class="big" id="mNext">🏆 결과 기록하고 대진표로</button><button class="ghost" id="mRe">이 경기 다시 하기 (기록 안 함)</button>`
+                             : `<button id="mRe">한 판 더</button><button class="ghost" id="mHome">처음 화면</button>`}
+      <button class="ghost" id="mStay">판 그대로 보기</button></div>`);
+    if(inT) $('mNext').onclick = () => { closeModal(); commitResult(); };
+    else $('mHome').onclick = () => { closeModal(); G = null; show('setupView'); };
+    $('mRe').onclick = () => { closeModal(); restartSame(); };
+    $('mStay').onclick = () => { closeModal(); $('btnLeave').textContent = inT ? '🏆 결과 기록하기' : '← 나가기'; };
+  }, 600);
+}
+function commitResult(){
+  const g = G; G = null;
+  setResult(g.ref, g.names[g.winner], {method: g.method, moves: g.moves.map(m => [m.x, m.y, m.c]), black: g.names[1], size: g.N});
+}
+$('btnUndo').onclick = () => {
+  if(!G || $('btnUndo').disabled) return;
+  if(G.ai){
+    const human = 3 - G.ai.color;
+    while(G.moves.length){ const m = G.moves.pop(); G.grid[m.y][m.x] = 0; if(m.c === human) break; }
+    G.turn = human;
+  } else {
+    const m = G.moves.pop(); G.grid[m.y][m.x] = 0; G.turn = m.c;
+    G.undos[m.c] = (G.undos[m.c] || 0) + 1;
+    G.msg = `${G.names[m.c]} 한 수 물렀어요`;
+  }
+  G.pending = null; G.timeLeft = G.settings.time; G.warn = false;
+  updateGameUI(); draw(); saveGame();
+};
+$('btnPause').onclick = () => { if(!G || G.over) return; G.paused = !G.paused; updateGameUI(); draw(); if(!G.paused) maybeAI(); };
+$('btnNums').onclick = () => { if(OG){ OG.nums = !OG.nums; renderOnline(); return; } if(!G) return; G.nums = !G.nums; updateGameUI(); draw(); };
+$('btnResign').onclick = () => {
+  if(OG){ onlineResign(); return; }
+  if(!G || G.over) return;
+  const loser = G.ai ? 3 - G.ai.color : G.turn, who = G.names[loser];
+  confirmBox(`${esc(who)} 기권할까요?`, '상대가 승리합니다.', () => { if(G && !G.over){ clearTimeout(aiTimer); endGame(3 - loser, 'resign'); } }, '기권');
+};
+$('btnLeave').onclick = () => {
+  if(OG){ closeOnline(); return; }
+  if(!G) return;
+  if(G.over && G.ref){ commitResult(); return; }
+  if(G.over){ G = null; show(T ? 'bracketView' : 'setupView'); return; }
+  confirmBox('대국을 그만둘까요?', '이 판은 기록되지 않아요.', () => {
+    clearInterval(timerIv); clearTimeout(aiTimer); clearGame();
+    if(G.ref){ const m = getMatch(G.ref); if(!m.winner) m.black = null; save(); }
+    const toT = !!G.ref; G = null;
+    show(toT ? 'bracketView' : 'setupView');
+  }, '그만두기');
+};
+
+function confetti(n = 120){
+  const colors = ['#c8553d','#2f6f62','#d9a400','#111','#fff','#e2b46a'];
+  for(let i = 0; i < n; i++){
+    const d = document.createElement('div'); d.className = 'confetti';
+    d.style.left = Math.random() * 100 + 'vw'; d.style.background = colors[i % colors.length];
+    d.style.animationDuration = (2 + Math.random() * 2.5) + 's'; d.style.animationDelay = (Math.random() * .6) + 's';
+    document.body.appendChild(d); setTimeout(() => d.remove(), 5500);
+  }
+}
+
+/* ================= 온라인 (Firebase / 체험 모드) ================= */
+function loadScript(src){ return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+const enc = s => encodeURIComponent(s).replace(/\./g, '%2E');
+const DB = (() => {
+  // 체험 모드: 같은 기기의 여러 창(탭)끼리 localStorage로 연결
+  const LK = 'omok_localdb', listeners = [];
+  const load = () => { try{ return JSON.parse(localStorage.getItem(LK)) || {}; }catch(e){ return {}; } };
+  const put = d => { try{ localStorage.setItem(LK, JSON.stringify(d)); }catch(e){} };
+  const getP = (d, p) => p.split('/').reduce((o, k) => (o == null || o[k] === undefined) ? null : o[k], d);
+  const setP = (d, p, v) => { const ks = p.split('/'); let o = d; for(let i = 0; i < ks.length - 1; i++){ if(typeof o[ks[i]] !== 'object' || o[ks[i]] === null) o[ks[i]] = {}; o = o[ks[i]]; } if(v === null || v === undefined) delete o[ks[ks.length-1]]; else o[ks[ks.length-1]] = v; };
+  const notify = () => { const d = load(); listeners.slice().forEach(l => { const v = getP(d, l.path), s = JSON.stringify(v); if(s !== l.last){ l.last = s; try{ l.cb(v); }catch(e){ console.error(e); } } }); };
+  window.addEventListener('storage', e => { if(e.key === LK) notify(); });
+  const local = {
+    name: 'local',
+    async init(){},
+    now(){ return Date.now(); },
+    on(path, cb){ const l = {path, cb, last: undefined}; listeners.push(l); setTimeout(notify, 0); return () => { const i = listeners.indexOf(l); if(i >= 0) listeners.splice(i, 1); }; },
+    async get(path){ return getP(load(), path); },
+    async set(path, v){ const d = load(); setP(d, path, v); put(d); notify(); },
+    async remove(path){ return local.set(path, null); },
+    async transaction(path, fn){ const d = load(), cur = getP(d, path), nv = fn(cur); if(nv === undefined) return {committed: false, value: cur}; setP(d, path, nv); put(d); notify(); return {committed: true, value: nv}; }
+  };
+  const fb = {
+    name: 'firebase', db: null, offset: 0,
+    async init(cfg){
+      await loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+      await loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js');
+      firebase.initializeApp(cfg); this.db = firebase.database();
+      this.db.ref('.info/serverTimeOffset').on('value', s => { this.offset = s.val() || 0; });
+    },
+    now(){ return Date.now() + this.offset; },
+    on(path, cb){ const r = this.db.ref(path), h = s => cb(s.val()); r.on('value', h); return () => r.off('value', h); },
+    async get(path){ return (await this.db.ref(path).get()).val(); },
+    set(path, v){ return this.db.ref(path).set(v); },
+    remove(path){ return this.db.ref(path).remove(); },
+    async transaction(path, fn){ const r = await this.db.ref(path).transaction(cur => fn(cur)); return {committed: r.committed, value: r.snapshot.val()}; }
+  };
+  const api = { impl: local, ready: null, failed: false };
+  ['now','on','get','set','remove','transaction'].forEach(k => api[k] = (...a) => api.impl[k](...a));
+  Object.defineProperty(api, 'name', { get: () => api.impl.name });
+  api.ready = (async () => {
+    const cfg = window.FIREBASE_CONFIG;
+    if(cfg && cfg.databaseURL){
+      try{ await fb.init(cfg); api.impl = fb; }
+      catch(e){ api.failed = true; console.error(e); }
+    }
+  })();
+  return api;
+})();
+
+const net = { role: null, code: null, me: null, unsubs: [], games: {}, lastT: null, presence: {}, dismissed: {}, hb: null, seenDone: {} };
+function netStop(){ net.unsubs.forEach(u => { try{ u(); }catch(e){} }); net.unsubs = []; clearInterval(net.hb); net.games = {}; net.presence = {}; }
+function refKey(ref){ return ref.k === 'g' ? `g${ref.g}_${ref.i}` : ref.k === 'b' ? `b${ref.r}_${ref.i}` : 't3'; }
+function keyRef(k){ if(k === 't3') return {k:'3'}; const [a, b] = k.slice(1).split('_').map(Number); return k[0] === 'g' ? {k:'g', g: a, i: b} : {k:'b', r: a, i: b}; }
+function liveGame(ref){ const g = net.games[refKey(ref)]; return g && g.status === 'playing' ? g : null; }
+function roomPath(p){ return `rooms/${net.code}/${p}`; }
+function fresh(ts){ return ts && DB.now() - ts < 45000; }
+function pushT(){ if(!T || !T.online || net.role !== 'host') return; const s = JSON.stringify(T); net.lastT = s; DB.set(roomPath('t'), s); }
+function finalWinner(t){ try{ return t && t.rounds ? t.rounds[t.rounds.length - 1][0].winner : null; }catch(e){ return null; } }
+function parseGames(v){ const out = {}; Object.entries(v || {}).forEach(([k, s]) => { try{ out[k] = JSON.parse(s); }catch(e){} }); return out; }
+function refreshViews(){
+  if(OG) return;
+  if(!$('bracketView').classList.contains('hidden')) renderTournament();
+  if(!$('studentView').classList.contains('hidden') && net.role === 'student') renderStudent();
+}
+async function newRoomCode(){
+  await DB.ready;
+  for(let k = 0; k < 20; k++){ const c = String(1000 + Math.floor(Math.random() * 9000)); if(!(await DB.get(`rooms/${c}/t`))) return c; }
+  return String(100000 + Math.floor(Math.random() * 900000));
+}
+
+/* ---- 결과 반영 (선생님·학생 누구의 기기에서도 안전하게) ---- */
+async function applyRemote(g){
+  if(!g || g.status !== 'done' || !g.winner) return;
+  await DB.transaction(roomPath('t'), cur => {
+    if(!cur) return undefined;
+    let t; try{ t = JSON.parse(cur); }catch(e){ return undefined; }
+    const keep = T; T = t; let changed = false;
+    try{
+      const ref = keyRef(g.key), m = getMatch(ref);
+      const same = m && ((m.a === g.names[1] && m.b === g.names[2]) || (m.a === g.names[2] && m.b === g.names[1]));
+      if(same && !m.winner){
+        m.black = g.names[1]; m.winner = g.names[g.winner];
+        m.rec = {at: Date.now(), seq: ++T.seq, method: g.method, moves: g.moves, black: g.names[1], size: g.N, online: true};
+        if(ref.k === 'b') advance(ref.r, ref.i);
+        changed = true;
+      }
+    }catch(e){ console.error(e); }
+    const out = T; T = keep;
+    return changed ? JSON.stringify(out) : undefined;
+  });
+  await DB.transaction(roomPath('games/' + g.key), cur => { if(!cur) return undefined; const x = JSON.parse(cur); if(x.status !== 'done' || x.applied) return undefined; x.applied = true; return JSON.stringify(x); });
+}
+
+/* ---- 선생님(호스트) ---- */
+async function hostConnect(){
+  await DB.ready;
+  netStop(); net.role = 'host'; net.code = T.online.code; net.lastT = null; net.seenDone = {};
+  net.unsubs.push(DB.on(roomPath('t'), v => {
+    if(!v){ pushT(); return; }
+    if(v === net.lastT) return;
+    const prevFinal = finalWinner(T), prevStageDone = T && T.groups ? groupStageDone() : false;
+    try{ T = JSON.parse(v); }catch(e){ return; }
+    net.lastT = v; store.set('omok_tournament', T);
+    refreshViews();
+    const nowFinal = finalWinner(T);
+    if(nowFinal && !prevFinal){ confetti(); Snd.play('champ'); openModal(`<div style="font-size:70px">🏆</div><h2>우승을 축하해요!</h2><div class="vsbig" style="font-size:38px;color:var(--accent)">${esc(nowFinal)}</div><p>${esc(T.name)} 챔피언</p><div class="btns"><button id="mOk">확인</button></div>`); $('mOk').onclick = closeModal; }
+    else if(T.groups && T.stage === 'group' && !prevStageDone && groupStageDone()) toast('🎉 조별 리그가 모두 끝났어요! 본선을 시작해 주세요.');
+  }));
+  net.unsubs.push(DB.on(roomPath('games'), v => {
+    net.games = parseGames(v);
+    Object.values(net.games).forEach(g => {
+      if(g.status === 'done' && !net.seenDone[g.key + g.startedAt]){
+        net.seenDone[g.key + g.startedAt] = true;
+        if(g.winner && Date.now() - (g.endAt || 0) < 15000) toast(`📡 ${g.names[g.winner]} 승리! (${g.names[1]} vs ${g.names[2]})`);
+      }
+      if(g.status === 'done' && !g.applied) applyRemote(g);
+    });
+    refreshViews();
+  }));
+  net.unsubs.push(DB.on(roomPath('presence'), v => { net.presence = v || {}; const pl = $('presList'); if(pl) pl.innerHTML = presenceHTML(); }));
+}
+function presenceHTML(){
+  const on = T.players.filter(p => fresh(net.presence[enc(p)])).length;
+  return `<p class="count">접속한 학생 ${on} / ${T.players.length}명</p><div class="pres">` + T.players.map(p => `<span class="${fresh(net.presence[enc(p)]) ? 'on' : ''}">${fresh(net.presence[enc(p)]) ? '🟢' : '⚪'} ${esc(p)}</span>`).join('') + '</div>';
+}
+function studentGuide(){
+  const code = T.online.code;
+  const url = /^https?:$/.test(location.protocol) && !/claude\.ai|claudeusercontent/.test(location.host) ? `${location.origin}${location.pathname}?room=${code}` : '';
+  openModal(`<h2>📱 학생 입장 안내</h2><p>태블릿에서 대회 주소를 열고 <b>참가 코드</b>를 입력한 뒤 자기 이름을 누르면 돼요.</p>
+    <div class="bigcode">${code}</div>
+    ${url ? `<div id="qr" class="qr"></div><p class="url">${esc(url)}</p>` : `<p class="count">Vercel에 올린 주소에서 열면 QR 코드도 함께 나와요.</p>`}
+    ${DB.name === 'local' ? `<p class="warnbox">⚠ 지금은 <b>체험 모드</b>예요. Firebase를 연결하기 전이라 이 기기의 다른 창끼리만 연결돼요.</p>` : ''}
+    <div id="presList">${presenceHTML()}</div>
+    <div class="btns"><button id="mOk">닫기</button><button class="ghost sm" id="mKill">🗑 온라인 대회 닫기 (서버의 기록 지우기)</button></div>`, true);
+  $('mOk').onclick = closeModal;
+  $('mKill').onclick = () => confirmBox('온라인 대회를 닫을까요?', '학생 태블릿 연결이 끊기고 서버에 있는 이 대회 기록이 지워져요. 이 컴퓨터의 대진표와 기록은 남아요.', async () => {
+    const c = T.online.code; netStop(); await DB.remove(`rooms/${c}`); T.online = null; net.role = null; save(); show('bracketView'); toast('온라인 대회를 닫았어요');
+  }, '닫기');
+  if(url){
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js').then(() => { const el = $('qr'); if(el && window.QRCode) new QRCode(el, {text: url, width: 190, height: 190}); }).catch(() => {});
+  }
+}
+
+/* ---- 학생 ---- */
+function renderJoin(prefill){
+  OG = null; G = null; show('studentView');
+  $('studentView').innerHTML = `<div class="card stu"><h2>🧒 오목 대회 입장</h2><p class="count">선생님 화면에 보이는 참가 코드를 입력하세요.</p>
+    <div class="row" style="justify-content:center"><input id="jCode" class="codein" inputmode="numeric" maxlength="6" placeholder="0000" value="${esc(prefill || '')}"><button class="big" id="jGo">입장</button></div>
+    <div id="jNames"></div>
+    ${DB.name === 'local' ? '<p class="warnbox">⚠ 체험 모드: 같은 기기의 다른 창끼리만 연결돼요.</p>' : ''}
+    <div class="row" style="justify-content:center;margin-top:22px"><button class="ghost sm" id="jTeacher">👩‍🏫 선생님 화면으로 가기</button></div></div>`;
+  $('jGo').onclick = () => joinCode($('jCode').value.trim());
+  $('jCode').onkeydown = e => { if(e.key === 'Enter') joinCode($('jCode').value.trim()); };
+  $('jTeacher').onclick = () => { sstore.del('omok_role'); netStop(); net.role = null; T = store.get('omok_tournament'); if(T && T.online) hostConnect(); show(T ? 'bracketView' : 'setupView'); };
+  if(prefill) joinCode(prefill);
+}
+async function joinCode(code){
+  if(!/^\d{4,6}$/.test(code)){ toast('숫자 코드를 입력해 주세요'); return; }
+  $('jNames').innerHTML = '<p class="count">찾는 중...</p>';
+  await DB.ready;
+  if(DB.failed){ $('jNames').innerHTML = '<p class="warnbox">서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.</p>'; return; }
+  const v = await DB.get(`rooms/${code}/t`);
+  if(!v){ $('jNames').innerHTML = '<p class="warnbox">그런 대회를 찾을 수 없어요. 코드를 다시 확인해요.</p>'; return; }
+  const t = JSON.parse(v), pres = (await DB.get(`rooms/${code}/presence`)) || {};
+  $('jNames').innerHTML = `<h3 style="margin:18px 0 4px">${esc(t.name)}</h3><p class="count">내 이름을 눌러요</p><div class="namegrid">` +
+    t.players.map(p => `<button class="ghost namebtn" data-n="${esc(p)}">${esc(p)}${fresh(pres[enc(p)]) ? ' <small style="color:var(--accent2)">●</small>' : ''}</button>`).join('') + '</div>';
+  $('jNames').querySelectorAll('.namebtn').forEach(b => b.onclick = () => {
+    const name = b.dataset.n;
+    if(fresh(pres[enc(name)])) confirmBox('이미 들어와 있는 이름이에요', `다른 태블릿에서 <b>${esc(name)}</b>(으)로 들어와 있어요. 정말 나인가요?`, () => enterAs(code, name), '나 맞아요');
+    else enterAs(code, name);
+  });
+}
+async function enterAs(code, name){
+  await DB.ready;
+  netStop(); net.role = 'student'; net.code = code; net.me = name; net.dismissed = {};
+  sstore.set('omok_role', {role: 'student', code, name});
+  const beat = () => DB.set(roomPath('presence/' + enc(name)), DB.now());
+  beat(); net.hb = setInterval(beat, 15000);
+  let first = true;
+  net.unsubs.push(DB.on(roomPath('t'), v => {
+    if(!v){ toast('선생님이 대회를 닫았어요'); sstore.del('omok_role'); netStop(); renderJoin(''); return; }
+    try{ T = JSON.parse(v); }catch(e){ return; }
+    if(!T.players.includes(name)){ sstore.del('omok_role'); renderJoin(code); return; }
+    if(first){ first = false; show('studentView'); }
+    refreshViews();
+  }));
+  net.unsubs.push(DB.on(roomPath('games'), v => {
+    net.games = parseGames(v);
+    const mine = Object.values(net.games).find(g => g.status === 'playing' && (g.names[1] === name || g.names[2] === name));
+    if(mine && !OG && !net.dismissed[mine.key + mine.startedAt]) { openOnline(mine.key); return; }
+    Object.values(net.games).forEach(g => { if(g.status === 'done' && !g.applied && g.winner) applyRemote(g); });
+    refreshViews();
+  }));
+}
+function myMatches(){ return T ? allMatches().filter(({m}) => m.a === net.me || m.b === net.me) : []; }
+function studentStatus(){
+  const me = net.me;
+  if(finalWinner(T) === me) return '🏆 우승을 축하해요!';
+  if(T.third && T.third.winner === me) return '🥉 3위를 축하해요!';
+  if(T.stage === 'group'){
+    const gi = T.groups.findIndex(g => g.players.includes(me));
+    if(gi >= 0 && groupDone(gi)) return groupStageDone() ? '조별 리그 끝! 선생님이 본선을 시작할 때까지 기다려요.' : '내 조 경기를 모두 마쳤어요! 다른 조를 기다려요. 👀';
+    return '상대 친구가 대국을 마칠 때까지 기다려요.';
+  }
+  const inMain = T.rounds && T.rounds.some(rd => rd.some(m => m.a === me || m.b === me));
+  if(!inMain) return '본선에는 못 갔지만 정말 잘했어요! 친구들 대국을 구경해요. 👏';
+  if(T.third && (T.third.a === me || T.third.b === me) && !T.third.winner) return '3위 결정전 상대를 기다려요.';
+  const lost = T.rounds.some(rd => rd.some(m => m.winner && m.winner !== me && (m.a === me || m.b === me)));
+  if(lost) return '아쉽게 탈락했어요. 친구들 대국을 응원해요! 📣';
+  return '다음 상대를 기다리는 중이에요.';
+}
+function renderStudent(){
+  if(!T || net.role !== 'student') return;
+  const me = net.me, games = Object.values(net.games);
+  const live = games.filter(g => g.status === 'playing');
+  const mine = live.find(g => g.names[1] === me || g.names[2] === me);
+  const ready = myMatches().filter(({m}) => m.a && m.b && m.b !== BYE && !m.winner);
+  let main = '';
+  if(mine) main = `<div class="stucard hot"><div class="big2">⚫ 대국 중이에요!</div><button class="big" id="sBack">대국으로 돌아가기</button></div>`;
+  else if(ready.length) main = ready.map(({ref, m}) => {
+    const opp = m.a === me ? m.b : m.a, g = net.games[refKey(ref)], wait = g && g.status === 'done' && !g.applied;
+    return `<div class="stucard ready"><div class="count">${stageName(ref)}</div><div class="big2">상대: <b>${esc(opp)}</b></div>
+      <button class="big sStart" data-k="${refKey(ref)}" ${wait ? 'disabled' : ''}>⚫ 대국 시작</button><div class="count" style="margin-top:6px">둘 중 누가 눌러도 함께 시작돼요</div></div>`;
+  }).join('');
+  else main = `<div class="stucard"><div class="big2">${studentStatus()}</div></div>`;
+  const done = myMatches().filter(({m}) => m.winner && m.b !== BYE).sort((a, b) => (a.m.rec ? a.m.rec.seq : 0) - (b.m.rec ? b.m.rec.seq : 0));
+  const w = done.filter(({m}) => m.winner === me).length;
+  $('studentView').innerHTML = `<div class="stuhead"><div><div class="hi">👋 ${esc(me)}</div><div class="count">${esc(T.name)} · 참가 코드 ${net.code}${DB.name === 'local' ? ' · 체험 모드' : ''}</div></div>
+      <div class="acts"><button class="ghost sm" id="sBracket">🏆 대진표</button><button class="ghost sm" id="sHelp">❓ 규칙</button><button class="ghost sm" id="sOut">이름 바꾸기</button></div></div>
+    ${main}
+    <div class="stugrid">
+      <div class="card"><h3>📊 나의 기록 · ${w}승 ${done.length - w}패</h3>${done.length ? done.map(({ref, m}) => {
+        const opp = m.a === me ? m.b : m.a, win = m.winner === me;
+        return `<div class="recrow"><span class="${win ? 'w' : 'l'}">${win ? '승' : '패'}</span> vs ${esc(opp)} <small class="count">${stageName(ref)} · ${recShort(m.rec)}</small>${m.rec && m.rec.moves ? `<button class="ghost sm sRp" data-k="${refKey(ref)}">기보</button>` : ''}</div>`;
+      }).join('') : '<p class="count">아직 끝난 경기가 없어요.</p>'}</div>
+      <div class="card"><h3>👀 지금 대국 중 (${live.length})</h3><div class="livelist">${live.length ? live.map(g => `<button class="ghost sWatch" data-k="${g.key}"><span class="dot b"></span> ${esc(g.names[1])} vs <span class="dot w"></span> ${esc(g.names[2])} · ${g.moves.length}수</button>`).join('') : '<p class="count">지금은 진행 중인 대국이 없어요.</p>'}</div></div>
+    </div>`;
+  const b = $('sBack'); if(b) b.onclick = () => { delete net.dismissed[mine.key + mine.startedAt]; openOnline(mine.key); };
+  document.querySelectorAll('.sStart').forEach(el => el.onclick = () => { el.disabled = true; stuStartMatch(keyRef(el.dataset.k)); });
+  document.querySelectorAll('.sWatch').forEach(el => el.onclick = () => openOnline(el.dataset.k));
+  document.querySelectorAll('.sRp').forEach(el => el.onclick = () => { const ref = keyRef(el.dataset.k); openReplay(getMatch(ref), stageName(ref)); });
+  $('sBracket').onclick = () => { tab = null; show('bracketView'); };
+  $('sHelp').onclick = helpBox;
+  $('sOut').onclick = () => confirmBox('이름을 바꿀까요?', '처음 입장 화면으로 돌아가요.', () => { DB.remove(roomPath('presence/' + enc(me))); sstore.del('omok_role'); const c = net.code; netStop(); net.role = null; renderJoin(c); });
+}
+async function stuStartMatch(ref){
+  const m = getMatch(ref), s = T.settings, key = refKey(ref);
+  if(!m || m.winner || !m.a || !m.b) return;
+  await DB.transaction(roomPath('games/' + key), cur => {
+    if(cur){ const g = JSON.parse(cur); if(g.status === 'playing') return undefined; if(g.status === 'done' && !g.applied) return undefined; }
+    const black = s.black === 'top' ? m.a : (Math.random() < .5 ? m.a : m.b);
+    const now = DB.now();
+    return JSON.stringify({ key, names: {1: black, 2: black === m.a ? m.b : m.a}, N: s.size, rules: {no33: s.no33, no44: s.no44}, time: s.time,
+      tap: !!s.tap, moves: [], turn: 1, turnAt: now, status: 'playing', winner: 0, method: null, applied: false, startedAt: now });
+  });
+}
+
+/* ---- 온라인 대국 화면 (대국·관전 공용) ---- */
+let OG = null;
+function gridOf(g){ const grid = Array.from({length: g.N}, () => Array(g.N).fill(0)); (g.moves || []).forEach(([x, y, c]) => grid[y][x] = c); return grid; }
+function openOnline(key){
+  closeOnline(true);
+  clearInterval(timerIv); clearTimeout(aiTimer); G = null;
+  OG = { key, me: 0, g: null, hover: null, pending: null, nums: false, shownEnd: false, lastLen: -1, msg: '', warn: false, path: roomPath('games/' + key) };
+  OG.unsub = DB.on(OG.path, v => {
+    if(!OG) return;
+    if(!v){ toast('이 대국이 취소되었어요'); closeOnline(); return; }
+    const g = JSON.parse(v);
+    if(OG.g && OG.g.startedAt !== g.startedAt) OG.shownEnd = false;
+    if(OG.g && OG.g.startedAt === g.startedAt && (g.timeouts || 0) > (OG.g.timeouts || 0)){ OG.timeoutMsg = `⏰ 시간 초과! ${g.names[g.turn]} 차례로 넘어갔어요.`; Snd.play('bad'); }
+    OG.g = g; g.moves = g.moves || [];
+    OG.me = net.role === 'student' ? (g.names[1] === net.me ? 1 : g.names[2] === net.me ? 2 : 0) : 0;
+    if(OG.lastLen >= 0 && g.moves.length > OG.lastLen) Snd.play('stone');
+    if(OG.lastLen !== g.moves.length){ OG.pending = null; OG.msg = ''; }
+    if(OG.timeoutMsg){ OG.msg = OG.timeoutMsg; OG.warn = true; OG.timeoutMsg = null; }
+    OG.lastLen = g.moves.length;
+    renderOnline();
+  });
+  OG.tick = setInterval(onlineTick, 500);
+  show('gameView');
+}
+function closeOnline(silent){
+  if(!OG) return;
+  if(OG.unsub) OG.unsub(); clearInterval(OG.tick);
+  if(OG.g && OG.g.status === 'playing') net.dismissed[OG.g.key + OG.g.startedAt] = true;
+  OG = null;
+  if(silent) return;
+  closeModal();
+  if(net.role === 'student') show('studentView'); else show('bracketView');
+  refreshViews();
+}
+function renderOnline(){
+  const g = OG && OG.g; if(!g) return;
+  const grid = gridOf(g), N = g.N, mv = g.moves.map(([x, y, c]) => ({x, y, c}));
+  let winLine = null;
+  if(g.status === 'done' && g.method === 'five' && mv.length){ const l = mv[mv.length - 1]; winLine = fiveLine(grid, N, l.x, l.y, l.c); }
+  const myTurn = g.status === 'playing' && OG.me && OG.me === g.turn;
+  let preview = null;
+  if(myTurn){ if(OG.pending) preview = [OG.pending[0], OG.pending[1], OG.me, true]; else if(OG.hover) preview = [OG.hover[0], OG.hover[1], OG.me, false]; }
+  drawBoard(cv, {N, grid, moves: mv, winLine, nums: OG.nums, preview});
+  $('nBlack').textContent = g.names[1] + (OG.me === 1 ? ' (나)' : '');
+  $('nWhite').textContent = g.names[2] + (OG.me === 2 ? ' (나)' : '');
+  $('pBlack').classList.toggle('turn', g.status === 'playing' && g.turn === 1);
+  $('pWhite').classList.toggle('turn', g.status === 'playing' && g.turn === 2);
+  let ref = null; try{ ref = keyRef(g.key); }catch(e){}
+  $('stageInfo').innerHTML = (ref && T ? stageName(ref) : '') + '<br>📡 온라인 대국';
+  $('ruleInfo').innerHTML = `다섯 개 이상 연속이면 승리<br>쌍삼 ${g.rules.no33 ? '금지' : '허용'} · 사사 ${g.rules.no44 ? '금지' : '허용'}<br>${g.time ? `한 수 ${g.time}초` : '시간 제한 없음'}<br>무르기 없음`;
+  const st = $('status');
+  if(g.status === 'done') { st.textContent = g.winner ? `🎉 ${g.names[g.winner]} 승리!` : '무승부'; st.className = 'status'; }
+  else if(OG.msg) { st.textContent = OG.msg; st.className = 'status' + (OG.warn ? ' warn' : ''); }
+  else if(!OG.me) { st.textContent = `👀 관전 중 · ${g.turn === 1 ? '⚫' : '⚪'} ${g.names[g.turn]} 차례 (${g.moves.length + 1}수)`; st.className = 'status'; }
+  else if(myTurn) { st.textContent = `🟢 내 차례예요! (${g.moves.length + 1}수)`; st.className = 'status'; }
+  else { st.textContent = `⏳ ${g.names[g.turn]} 친구가 생각 중...`; st.className = 'status'; }
+  ['btnUndo','btnPause'].forEach(id => $(id).classList.add('hidden'));
+  $('btnResign').classList.toggle('hidden', !OG.me);
+  $('btnResign').disabled = g.status !== 'playing';
+  $('btnNums').classList.toggle('on', OG.nums);
+  $('btnLeave').textContent = OG.me && g.status === 'playing' ? '← 잠깐 나가기' : '← 나가기';
+  onlineTick();
+  if(g.status === 'done' && !OG.shownEnd){
+    OG.shownEnd = true;
+    const g2 = g;
+    setTimeout(() => {
+      if(!OG || !OG.g || OG.g.startedAt !== g2.startedAt) return;
+      const iWon = OG.me && g2.winner === OG.me, iLost = OG.me && g2.winner && g2.winner !== OG.me;
+      if(!g2.winner){ openModal(`<h2>무승부</h2><p>더 둘 곳이 없어요. 대국을 다시 시작해 주세요.</p><div class="btns"><button id="mOk">확인</button></div>`); }
+      else if(iWon){ confetti(60); Snd.play('win'); openModal(`<div style="font-size:60px">🎉</div><h2>이겼어요!</h2><p>${g2.method === 'resign' ? '상대가 기권했어요' : g2.moves.length + '수 만에 오목 완성'}</p><p>🤝 친구에게 "고마워" 인사하고, 좋았던 수를 하나 말해 줘요.</p><div class="btns"><button id="mOk">확인</button></div>`); }
+      else if(iLost){ Snd.play('bad'); openModal(`<div style="font-size:60px">💪</div><h2>아쉬워요!</h2><p>${esc(g2.names[g2.winner])} 승리 · ${g2.method === 'resign' ? '기권' : g2.moves.length + '수'}</p><p>🤝 "고마워" 인사하기! 기보를 보면서 어디서 막을 수 있었는지 찾아봐요.</p><div class="btns"><button id="mOk">확인</button></div>`); }
+      else { Snd.play('win'); openModal(`<h2>${esc(g2.names[g2.winner])} 승리!</h2><p>${esc(g2.names[1])} vs ${esc(g2.names[2])} · ${g2.method === 'resign' ? '기권' : g2.moves.length + '수'}</p><div class="btns"><button id="mOk">확인</button></div>`); }
+      $('mOk').onclick = () => closeOnline();
+    }, 700);
+  }
+}
+function onlineTick(){
+  const g = OG && OG.g; if(!g) return;
+  const left = g.time && g.status === 'playing' ? Math.ceil(g.time - (DB.now() - g.turnAt) / 1000) : null;
+  ['tBlack','tWhite'].forEach((id, k) => {
+    const el = $(id), on = left !== null && g.turn === k + 1;
+    el.textContent = on ? Math.max(0, left) : '';
+    el.classList.toggle('low', on && left <= 5);
+  });
+  if(left !== null && ((left < 0 && ((OG.me && OG.me !== g.turn) || net.role === 'host')) || (left < -3 && OG.me))){
+    const turnAt = g.turnAt;
+    DB.transaction(OG.path, cur => {
+      if(!cur) return undefined; const x = JSON.parse(cur);
+      if(x.status !== 'playing' || x.turnAt !== turnAt) return undefined;
+      x.turn = 3 - x.turn; x.turnAt = DB.now(); x.timeouts = (x.timeouts || 0) + 1; return JSON.stringify(x);
+    });
+  }
+}
+function onlineCanPlay(){ return OG && OG.g && OG.g.status === 'playing' && OG.me && OG.me === OG.g.turn; }
+function onlineClick(e){
+  if(!onlineCanPlay()) return;
+  const g = OG.g, p = cellFromEvent(cv, g.N, e); if(!p) return;
+  const [x, y] = p, grid = gridOf(g);
+  if(grid[y][x]) return;
+  if(g.tap && !(OG.pending && OG.pending[0] === x && OG.pending[1] === y)){ OG.pending = [x, y]; OG.msg = '같은 자리를 한 번 더 누르면 돌을 놓아요'; OG.warn = false; renderOnline(); return; }
+  const j = judge(grid, g.N, x, y, OG.me, g.rules);
+  if(j === '33' || j === '44'){ OG.pending = null; OG.msg = `🚫 ${j === '33' ? '쌍삼(3·3)' : '사사(4·4)'} 자리라서 둘 수 없어요!`; OG.warn = true; Snd.play('bad'); renderOnline(); return; }
+  const me = OG.me;
+  OG.pending = null; OG.msg = ''; Snd.play('stone'); OG.lastLen = g.moves.length + 1;
+  // 바로 화면에 보여 주고(반응성), 서버에서 확정
+  g.moves.push([x, y, me]); g.turn = 3 - me; renderOnline();
+  DB.transaction(OG.path, cur => {
+    if(!cur) return undefined; const s = JSON.parse(cur); s.moves = s.moves || [];
+    if(s.status !== 'playing' || s.turn !== me) return undefined;
+    const gr = gridOf(s); if(gr[y][x]) return undefined;
+    const jj = judge(gr, s.N, x, y, me, s.rules); if(jj === '33' || jj === '44') return undefined;
+    s.moves.push([x, y, me]);
+    if(jj === 'five'){ s.status = 'done'; s.winner = me; s.method = 'five'; s.endAt = DB.now(); }
+    else if(s.moves.length >= s.N * s.N){ s.status = 'done'; s.winner = 0; s.method = 'draw'; s.applied = true; s.endAt = DB.now(); }
+    else { s.turn = 3 - me; s.turnAt = DB.now(); }
+    return JSON.stringify(s);
+  }).then(r => {
+    if(!r.committed){ toast('돌을 놓지 못했어요. 다시 해 볼까요?'); return; }
+    const s = typeof r.value === 'string' ? JSON.parse(r.value) : null;
+    if(s && s.status === 'done' && s.winner) applyRemote(s);
+  });
+}
+function onlineResign(){
+  if(!OG || !OG.me || OG.g.status !== 'playing') return;
+  const me = OG.me;
+  confirmBox('기권할까요?', '상대 친구가 승리해요.', () => {
+    DB.transaction(OG.path, cur => { if(!cur) return undefined; const s = JSON.parse(cur); if(s.status !== 'playing') return undefined; s.status = 'done'; s.winner = 3 - me; s.method = 'resign'; s.endAt = DB.now(); return JSON.stringify(s); })
+      .then(r => { if(r.committed) applyRemote(JSON.parse(r.value)); });
+  }, '기권');
+}
+
+/* ---- 선생님 관전 탭 ---- */
+function renderLive(){
+  const live = Object.values(net.games).filter(g => g.status === 'playing').sort((a, b) => a.startedAt - b.startedAt);
+  const box = $('tabLive');
+  if(!T.online){ box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="banner"><span>📱 참가 코드 <b style="font-size:24px;letter-spacing:3px">${T.online.code}</b> · 진행 중 대국 <b>${live.length}</b>개 · 판을 누르면 크게 볼 수 있어요.</span><button class="ghost" id="lvGuide">학생 입장 안내 · 접속 현황</button></div>` +
+    (live.length ? `<div class="livegrid">${live.map(g => `<div class="livecard" data-k="${g.key}"><canvas width="420" height="420"></canvas>
+      <div class="jua" style="font-size:18px;margin-top:6px"><span class="dot b"></span> ${esc(g.names[1])} <span class="count">vs</span> <span class="dot w"></span> ${esc(g.names[2])}</div>
+      <div class="count">${stageName(keyRef(g.key))} · ${g.moves.length}수 · ${esc(g.names[g.turn])} 차례</div></div>`).join('')}</div>`
+      : '<p class="legend">지금 진행 중인 온라인 대국이 없어요. 학생이 자기 태블릿에서 "대국 시작"을 누르면 여기에 나타나요.</p>');
+  box.querySelectorAll('.livecard').forEach(el => {
+    const g = net.games[el.dataset.k], mv = (g.moves || []).map(([x, y, c]) => ({x, y, c}));
+    drawBoard(el.querySelector('canvas'), {N: g.N, grid: gridOf(g), moves: mv});
+    el.onclick = () => openOnline(el.dataset.k);
+  });
+  $('lvGuide').onclick = studentGuide;
+}
+
+/* ================= 시작 ================= */
+const savedNames = store.get('omok_names'); if(savedNames) $('names').value = savedNames;
+updateCount();
+T = store.get('omok_tournament');
+// 이전 버전 대회 데이터 호환
+if(T && !('stage' in T)){ T.stage = 'main'; T.groups = null; T.third = null; T.lots = {}; T.seq = 0; T.players.forEach(p => T.lots[p] = Math.random()); }
+let roomQ = null; try{ roomQ = new URLSearchParams(location.search).get('room'); }catch(e){}
+const role = sstore.get('omok_role');
+if(roomQ || (role && role.role === 'student')){
+  // 학생 태블릿
+  T = null;
+  if(role && role.role === 'student' && (!roomQ || roomQ === role.code)){ show('studentView'); $('studentView').innerHTML = '<p class="legend" style="text-align:center">연결하는 중...</p>'; enterAs(role.code, role.name); }
+  else renderJoin(roomQ || '');
+} else {
+  if(T){ applySettings(T.settings); $('tName').value = T.name; show('bracketView'); if(T.online) hostConnect(); }
+  else show('setupView');
+}
+const sg = store.get('omok_game');
+if(sg && !sg.over && sg.moves && net.role !== 'student' && !roomQ){
+  let valid = true;
+  if(sg.ref){ try{ valid = !!(T && !getMatch(sg.ref).winner); }catch(e){ valid = false; } }
+  if(valid){
+    openModal(`<h2>두던 대국이 있어요</h2><div class="vsbig">⚫ ${esc(sg.names[1])} <span class="v">VS</span> ⚪ ${esc(sg.names[2])}</div><p>${sg.moves.length}수까지 두었어요. 이어서 둘까요?</p>
+      <div class="pickrow"><button class="ghost" id="mNo">버리기</button><button id="mYes">이어서 두기</button></div>`);
+    $('mNo').onclick = () => { clearGame(); closeModal(); };
+    $('mYes').onclick = () => { closeModal(); resumeGame(sg); };
+  } else clearGame();
+}
+})();
+</script>
+</body>
+</html>
