@@ -177,6 +177,15 @@ tr.adv td{background:#e6f2ee}
 .pres span{background:#fff;border:1px solid var(--line);border-radius:8px;padding:2px 8px;color:var(--sub)}
 .pres span.on{color:var(--ink);border-color:var(--accent2)}
 .match .meta.live,.gm .m .live{color:var(--accent);font-weight:700}
+.home{max-width:980px;margin:10px auto;text-align:center}
+.home h2{font-size:30px;margin:6px 0 18px}
+.homegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.homecard{background:var(--paper);color:var(--ink);border:3px solid var(--line);border-radius:20px;padding:22px 16px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:24px}
+.homecard:hover{border-color:var(--accent2);opacity:1;transform:translateY(-2px)}
+.homecard .ic{font-size:48px}
+.homecard small{font-family:'Gowun Dodum';font-size:15px;color:var(--sub)}
+.homecard.main{border-color:var(--accent2)}
+.bigscore{font-family:'Jua';font-size:40px;color:var(--accent);margin:0 10px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:12px;z-index:70;font-family:'Jua'}
 </style>
 </head>
@@ -193,8 +202,23 @@ tr.adv td{background:#e6f2ee}
 </header>
 
 <main>
+  <!-- 처음 화면 -->
+  <section id="homeView" class="hidden">
+    <div class="home">
+      <h2>⚫ 무엇을 할까요? ⚪</h2>
+      <div class="homegrid">
+        <button class="homecard main" id="hStudent"><span class="ic">🧒</span>대회 참가<small>선생님이 알려 준 참가 코드로 입장</small></button>
+        <button class="homecard main" id="hFriend"><span class="ic">👫</span>친구랑 연습<small>태블릿 2대로 친구와 대국</small></button>
+        <button class="homecard" id="hLocal"><span class="ic">⚫⚪</span>한 기기로 둘이서<small>태블릿 하나를 같이 써요</small></button>
+        <button class="homecard" id="hAI"><span class="ic">🤖</span>컴퓨터와 연습<small>쉬움 · 보통 · 어려움</small></button>
+        <button class="homecard" id="hTeacher"><span class="ic">👩‍🏫</span>선생님<small>대회 만들기 · 진행 · 관전</small></button>
+        <button class="homecard" id="hHelp"><span class="ic">❓</span>오목 규칙<small>쌍삼 · 사사 · 예절</small></button>
+      </div>
+    </div>
+  </section>
+
   <!-- 설정 -->
-  <section id="setupView">
+  <section id="setupView" class="hidden">
     <div class="setup">
       <div class="card">
         <h2 style="margin-top:0">👥 참가자 명단</h2>
@@ -263,6 +287,7 @@ tr.adv td{background:#e6f2ee}
 
   <!-- 학생 -->
   <section id="studentView" class="hidden"></section>
+  <section id="practiceView" class="hidden"></section>
 
   <!-- 대국 -->
   <section id="gameView" class="hidden">
@@ -344,14 +369,16 @@ async function copyText(text){
   catch(e){ return false; }
 }
 function show(view){
-  ['setupView','bracketView','gameView','studentView'].forEach(v => $(v).classList.toggle('hidden', v !== view));
+  ['homeView','setupView','bracketView','gameView','studentView','practiceView'].forEach(v => $(v).classList.toggle('hidden', v !== view));
   renderHeader(view);
   if(view === 'bracketView') renderTournament();
 }
 function renderHeader(view){
   const a = $('headerActs'); a.innerHTML = '';
   const add = (txt, cls, fn) => { const b = document.createElement('button'); b.textContent = txt; b.className = 'sm ' + (cls || ''); b.onclick = fn; a.appendChild(b); };
-  $('title').textContent = T ? T.name : '우리 반 오목 토너먼트';
+  $('title').textContent = (T && view !== 'homeView' && view !== 'practiceView') ? T.name : '우리 반 오목 대회';
+  const homeOK = view === 'setupView' || (view === 'bracketView' && net.role !== 'student') || (view === 'studentView' && net.role !== 'student') || (view === 'practiceView' && net.role !== 'practice');
+  if(homeOK) add('🏠 처음으로', 'ghost', showHome);
   if(view === 'bracketView' && net.role === 'student'){
     add('← 내 화면으로', '', () => { show('studentView'); renderStudent(); });
     return;
@@ -700,6 +727,7 @@ function roundRobin(players){
   return out;
 }
 async function makeTournament(players, settings, name, keepRoom){
+  setMode('teacher');
   const prevCode = keepRoom && T && T.online ? T.online.code : null;
   const list = settings.shuffle ? shuffle(players) : players.slice();
   T = { name, players: players.slice(), settings: Object.assign({}, settings), groups: null, rounds: null, third: null, lots: {}, stage: 'main', seq: 0, online: null };
@@ -1257,7 +1285,7 @@ function endGame(winner, method){
                              : `<button id="mRe">한 판 더</button><button class="ghost" id="mHome">처음 화면</button>`}
       <button class="ghost" id="mStay">판 그대로 보기</button></div>`);
     if(inT) $('mNext').onclick = () => { closeModal(); commitResult(); };
-    else $('mHome').onclick = () => { closeModal(); G = null; show('setupView'); };
+    else $('mHome').onclick = () => { closeModal(); G = null; afterLocalGame(); };
     $('mRe').onclick = () => { closeModal(); restartSame(); };
     $('mStay').onclick = () => { closeModal(); $('btnLeave').textContent = inT ? '🏆 결과 기록하기' : '← 나가기'; };
   }, 600);
@@ -1292,12 +1320,12 @@ $('btnLeave').onclick = () => {
   if(OG){ closeOnline(); return; }
   if(!G) return;
   if(G.over && G.ref){ commitResult(); return; }
-  if(G.over){ G = null; show(T ? 'bracketView' : 'setupView'); return; }
+  if(G.over){ G = null; afterLocalGame(); return; }
   confirmBox('대국을 그만둘까요?', '이 판은 기록되지 않아요.', () => {
     clearInterval(timerIv); clearTimeout(aiTimer); clearGame();
     if(G.ref){ const m = getMatch(G.ref); if(!m.winner) m.black = null; save(); }
     const toT = !!G.ref; G = null;
-    show(toT ? 'bracketView' : 'setupView');
+    if(toT) show('bracketView'); else afterLocalGame();
   }, '그만두기');
 };
 
@@ -1375,6 +1403,7 @@ function refreshViews(){
   if(OG) return;
   if(!$('bracketView').classList.contains('hidden')) renderTournament();
   if(!$('studentView').classList.contains('hidden') && net.role === 'student') renderStudent();
+  if(!$('practiceView').classList.contains('hidden') && net.role === 'practice') renderPracticeRoom();
 }
 async function newRoomCode(){
   await DB.ready;
@@ -1384,7 +1413,7 @@ async function newRoomCode(){
 
 /* ---- 결과 반영 (선생님·학생 누구의 기기에서도 안전하게) ---- */
 async function applyRemote(g){
-  if(!g || g.status !== 'done' || !g.winner) return;
+  if(!g || g.practice || net.role === 'practice' || g.status !== 'done' || !g.winner) return;
   await DB.transaction(roomPath('t'), cur => {
     if(!cur) return undefined;
     let t; try{ t = JSON.parse(cur); }catch(e){ return undefined; }
@@ -1456,16 +1485,18 @@ function studentGuide(){
 }
 
 /* ---- 학생 ---- */
-function renderJoin(prefill){
-  OG = null; G = null; show('studentView');
+function renderJoin(prefill, contName){
+  OG = null; G = null; setMode('join'); show('studentView');
   $('studentView').innerHTML = `<div class="card stu"><h2>🧒 오목 대회 입장</h2><p class="count">선생님 화면에 보이는 참가 코드를 입력하세요.</p>
     <div class="row" style="justify-content:center"><input id="jCode" class="codein" inputmode="numeric" maxlength="6" placeholder="0000" value="${esc(prefill || '')}"><button class="big" id="jGo">입장</button></div>
+    ${contName ? `<div style="margin:14px 0"><button class="big" id="jCont">▶ ${esc(contName)}(으)로 이어서 하기</button><p class="count">내가 아니라면 아래에서 이름을 다시 골라요</p></div>` : ''}
     <div id="jNames"></div>
     ${DB.name === 'local' ? '<p class="warnbox">⚠ 체험 모드: 같은 기기의 다른 창끼리만 연결돼요.</p>' : ''}
     <div class="row" style="justify-content:center;margin-top:22px"><button class="ghost sm" id="jTeacher">👩‍🏫 선생님 화면으로 가기</button></div></div>`;
   $('jGo').onclick = () => joinCode($('jCode').value.trim());
   $('jCode').onkeydown = e => { if(e.key === 'Enter') joinCode($('jCode').value.trim()); };
-  $('jTeacher').onclick = () => { sstore.del('omok_role'); netStop(); net.role = null; T = store.get('omok_tournament'); if(T && T.online) hostConnect(); show(T ? 'bracketView' : 'setupView'); };
+  $('jTeacher').onclick = () => { sstore.del('omok_role'); netStop(); net.role = null; enterTeacher(); };
+  if(contName) $('jCont').onclick = () => enterAs(prefill, contName);
   if(prefill) joinCode(prefill);
 }
 async function joinCode(code){
@@ -1486,7 +1517,8 @@ async function joinCode(code){
 }
 async function enterAs(code, name){
   await DB.ready;
-  netStop(); net.role = 'student'; net.code = code; net.me = name; net.dismissed = {};
+  netStop(); net.role = 'student'; net.code = code; net.me = name; net.dismissed = {}; setMode('student');
+  show('studentView'); $('studentView').innerHTML = '<p class="legend" style="text-align:center">연결하는 중...</p>';
   sstore.set('omok_role', {role: 'student', code, name});
   const beat = () => DB.set(roomPath('presence/' + enc(name)), DB.now());
   beat(); net.hb = setInterval(beat, 15000);
@@ -1580,10 +1612,10 @@ function openOnline(key){
     if(!OG) return;
     if(!v){ toast('이 대국이 취소되었어요'); closeOnline(); return; }
     const g = JSON.parse(v);
-    if(OG.g && OG.g.startedAt !== g.startedAt) OG.shownEnd = false;
+    if(OG.g && OG.g.startedAt !== g.startedAt){ OG.shownEnd = false; OG.lastLen = -1; if(modalOpen()) closeModal(); toast('🔁 새 판이 시작됐어요!'); }
     if(OG.g && OG.g.startedAt === g.startedAt && (g.timeouts || 0) > (OG.g.timeouts || 0)){ OG.timeoutMsg = `⏰ 시간 초과! ${g.names[g.turn]} 차례로 넘어갔어요.`; Snd.play('bad'); }
     OG.g = g; g.moves = g.moves || [];
-    OG.me = net.role === 'student' ? (g.names[1] === net.me ? 1 : g.names[2] === net.me ? 2 : 0) : 0;
+    OG.me = (net.role === 'student' || net.role === 'practice') ? (g.names[1] === net.me ? 1 : g.names[2] === net.me ? 2 : 0) : 0;
     if(OG.lastLen >= 0 && g.moves.length > OG.lastLen) Snd.play('stone');
     if(OG.lastLen !== g.moves.length){ OG.pending = null; OG.msg = ''; }
     if(OG.timeoutMsg){ OG.msg = OG.timeoutMsg; OG.warn = true; OG.timeoutMsg = null; }
@@ -1600,7 +1632,9 @@ function closeOnline(silent){
   OG = null;
   if(silent) return;
   closeModal();
-  if(net.role === 'student') show('studentView'); else show('bracketView');
+  if(net.role === 'student') show('studentView');
+  else if(net.role === 'practice'){ show('practiceView'); renderPracticeRoom(); return; }
+  else show('bracketView');
   refreshViews();
 }
 function renderOnline(){
@@ -1617,7 +1651,7 @@ function renderOnline(){
   $('pBlack').classList.toggle('turn', g.status === 'playing' && g.turn === 1);
   $('pWhite').classList.toggle('turn', g.status === 'playing' && g.turn === 2);
   let ref = null; try{ ref = keyRef(g.key); }catch(e){}
-  $('stageInfo').innerHTML = (ref && T ? stageName(ref) : '') + '<br>📡 온라인 대국';
+  $('stageInfo').innerHTML = g.practice ? `👫 친구랑 연습<br>${g.round || 1}번째 판` : (ref && T ? stageName(ref) : '') + '<br>📡 온라인 대국';
   $('ruleInfo').innerHTML = `다섯 개 이상 연속이면 승리<br>쌍삼 ${g.rules.no33 ? '금지' : '허용'} · 사사 ${g.rules.no44 ? '금지' : '허용'}<br>${g.time ? `한 수 ${g.time}초` : '시간 제한 없음'}<br>무르기 없음`;
   const st = $('status');
   if(g.status === 'done') { st.textContent = g.winner ? `🎉 ${g.names[g.winner]} 승리!` : '무승부'; st.className = 'status'; }
@@ -1641,6 +1675,12 @@ function renderOnline(){
       else if(iWon){ confetti(60); Snd.play('win'); openModal(`<div style="font-size:60px">🎉</div><h2>이겼어요!</h2><p>${g2.method === 'resign' ? '상대가 기권했어요' : g2.moves.length + '수 만에 오목 완성'}</p><p>🤝 친구에게 "고마워" 인사하고, 좋았던 수를 하나 말해 줘요.</p><div class="btns"><button id="mOk">확인</button></div>`); }
       else if(iLost){ Snd.play('bad'); openModal(`<div style="font-size:60px">💪</div><h2>아쉬워요!</h2><p>${esc(g2.names[g2.winner])} 승리 · ${g2.method === 'resign' ? '기권' : g2.moves.length + '수'}</p><p>🤝 "고마워" 인사하기! 기보를 보면서 어디서 막을 수 있었는지 찾아봐요.</p><div class="btns"><button id="mOk">확인</button></div>`); }
       else { Snd.play('win'); openModal(`<h2>${esc(g2.names[g2.winner])} 승리!</h2><p>${esc(g2.names[1])} vs ${esc(g2.names[2])} · ${g2.method === 'resign' ? '기권' : g2.moves.length + '수'}</p><div class="btns"><button id="mOk">확인</button></div>`); }
+      if(net.role === 'practice'){
+        $('mOk').textContent = '방으로'; $('mOk').classList.add('ghost');
+        const again = document.createElement('button'); again.textContent = '🔁 한 판 더 (흑백 바꾸기)'; again.className = 'big';
+        again.onclick = () => { closeOnline(); practiceNewGame(false); };
+        $('mOk').parentNode.insertBefore(again, $('mOk'));
+      }
       $('mOk').onclick = () => closeOnline();
     }, 700);
   }
@@ -1718,34 +1758,213 @@ function renderLive(){
   $('lvGuide').onclick = studentGuide;
 }
 
+/* ================= 친구랑 연습 (태블릿 2대) ================= */
+const PR = { code: null, meta: null };
+function practiceHome(){
+  netStop(); net.role = null; OG = null; G = null; PR.code = null; PR.meta = null;
+  sstore.del('omok_practice'); setMode('practice-home');
+  show('practiceView');
+  const nm = store.get('omok_pname') || '';
+  $('practiceView').innerHTML = `<div class="card stu"><h2>👫 친구랑 연습</h2><p class="count">친구와 각자 태블릿으로 대국해요. 대회 기록에는 남지 않아요.</p>
+    <div class="row" style="justify-content:center"><span class="jua" style="font-size:20px">내 이름</span><input id="prName" value="${esc(nm)}" placeholder="이름 또는 별명" style="width:200px;font-size:20px"></div>
+    <div class="homegrid" style="margin-top:18px">
+      <div class="card" style="text-align:center"><h3 style="margin-top:0">🏠 방 만들기</h3>
+        <div class="row" style="justify-content:center"><label class="count"><input type="checkbox" id="prNo33" checked style="width:18px;height:18px;vertical-align:middle"> 쌍삼 금지</label>
+        <select id="prTime"><option value="0">시간 제한 없음</option><option value="20">한 수 20초</option><option value="30">한 수 30초</option></select></div>
+        <button class="big" id="prMake" style="margin-top:8px">방 만들기</button></div>
+      <div class="card" style="text-align:center"><h3 style="margin-top:0">🚪 친구 방에 들어가기</h3>
+        <input id="prCode" class="codein" inputmode="numeric" maxlength="4" placeholder="0000">
+        <div><button class="big" id="prJoin" style="margin-top:8px">들어가기</button></div></div>
+    </div>
+    <div id="prMsg"></div>
+    ${DB.name === 'local' ? '<p class="warnbox">⚠ 체험 모드: 같은 기기의 다른 창끼리만 연결돼요.</p>' : ''}</div>`;
+  const getName = () => { const n = $('prName').value.trim(); if(!n){ toast('이름을 먼저 적어 주세요'); $('prName').focus(); return null; } store.set('omok_pname', n); return n; };
+  $('prMake').onclick = async () => { const n = getName(); if(!n) return; $('prMake').disabled = true; await createPractice(n, $('prNo33').checked, +$('prTime').value); };
+  $('prJoin').onclick = () => { const n = getName(); if(!n) return; joinPractice($('prCode').value.trim(), n); };
+  $('prCode').onkeydown = e => { if(e.key === 'Enter') $('prJoin').click(); };
+}
+async function createPractice(name, no33, time){
+  await DB.ready;
+  let code = null;
+  for(let k = 0; k < 20 && !code; k++){ const c = String(1000 + Math.floor(Math.random() * 9000)); if(!(await DB.get(`rooms/P${c}/meta`))) code = c; }
+  if(!code){ toast('잠시 후 다시 해 주세요'); return; }
+  await DB.set(`rooms/P${code}/meta`, JSON.stringify({ host: name, guest: null, rules: {no33, no44: false}, time, score: {}, created: DB.now() }));
+  enterPractice(code, name);
+}
+async function joinPractice(code, name){
+  if(!/^\d{4}$/.test(code)){ toast('숫자 4자리를 입력해요'); return; }
+  await DB.ready;
+  let why = '';
+  const r = await DB.transaction(`rooms/P${code}/meta`, cur => {
+    if(!cur){ why = 'none'; return undefined; }
+    const m = JSON.parse(cur);
+    if(m.host === name){ why = 'same'; return undefined; }
+    if(m.guest && m.guest !== name){ why = 'full'; return undefined; }
+    m.guest = name; why = ''; return JSON.stringify(m);
+  });
+  if(!r.committed){
+    $('prMsg').innerHTML = `<p class="warnbox">${why === 'same' ? '방을 만든 친구와 다른 이름을 써 주세요.' : why === 'full' ? '이미 두 명이 들어가 있는 방이에요.' : '그런 방을 찾을 수 없어요. 코드를 다시 확인해요.'}</p>`;
+    return;
+  }
+  enterPractice(code, name);
+}
+async function enterPractice(code, name){
+  await DB.ready;
+  netStop(); net.role = 'practice'; net.code = 'P' + code; net.me = name; net.dismissed = {}; PR.code = code;
+  sstore.set('omok_practice', {code, name}); setMode('practice');
+  show('practiceView'); $('practiceView').innerHTML = '<p class="legend" style="text-align:center">연결하는 중...</p>';
+  net.unsubs.push(DB.on(roomPath('meta'), v => {
+    if(!v){ if(PR.meta) toast('방이 닫혔어요'); closeOnline(true); practiceHome(); return; }
+    const was = PR.meta; PR.meta = JSON.parse(v);
+    if(PR.meta.host !== name && PR.meta.guest !== name){ toast('방에서 나왔어요'); practiceHome(); return; }
+    if(was && was.guest && !PR.meta.guest) toast('친구가 방을 나갔어요');
+    if(was && !was.guest && PR.meta.guest) Snd.play('win');
+    // 둘 다 들어오면 방장이 첫 판을 연다
+    if(PR.meta.host === name && PR.meta.guest && !net.games.p) practiceNewGame(true);
+    if(!OG) renderPracticeRoom();
+  }));
+  net.unsubs.push(DB.on(roomPath('games'), v => {
+    net.games = parseGames(v);
+    const g = net.games.p;
+    if(g && g.status === 'done' && g.winner && !g.scored) practiceScore(g);
+    if(g && g.status === 'playing' && !OG && (g.names[1] === name || g.names[2] === name) && !net.dismissed[g.key + g.startedAt]){ openOnline('p'); return; }
+    if(!OG && !$('practiceView').classList.contains('hidden')) renderPracticeRoom();
+  }));
+}
+async function practiceScore(g){
+  const r = await DB.transaction(roomPath('games/p'), cur => { if(!cur) return undefined; const x = JSON.parse(cur); if(x.startedAt !== g.startedAt || x.scored || x.status !== 'done') return undefined; x.scored = true; return JSON.stringify(x); });
+  if(!r.committed) return;
+  const w = g.names[g.winner];
+  await DB.transaction(roomPath('meta'), cur => { if(!cur) return undefined; const m = JSON.parse(cur); m.score = m.score || {}; m.score[enc(w)] = (m.score[enc(w)] || 0) + 1; return JSON.stringify(m); });
+}
+async function practiceNewGame(first){
+  const m = PR.meta; if(!m || !m.guest) return;
+  await DB.transaction(roomPath('games/p'), cur => {
+    let prev = null;
+    if(cur){ prev = JSON.parse(cur); if(prev.status === 'playing') return undefined; }
+    if(first && prev) return undefined;
+    // 판마다 흑백을 바꿔요 (첫 판은 랜덤)
+    const black = prev ? prev.names[2] : (Math.random() < .5 ? m.host : m.guest);
+    const white = black === m.host ? m.guest : m.host, now = DB.now();
+    return JSON.stringify({ key: 'p', practice: true, names: {1: black, 2: white}, N: 15, rules: m.rules, time: m.time, tap: false,
+      moves: [], turn: 1, turnAt: now, status: 'playing', winner: 0, method: null, applied: true, startedAt: now, round: prev ? (prev.round || 1) + 1 : 1 });
+  });
+}
+function renderPracticeRoom(){
+  const m = PR.meta; if(!m) return;
+  const me = net.me, g = net.games.p;
+  const sc = n => (m.score && m.score[enc(n)]) || 0;
+  let html = `<div class="card stu">`;
+  if(!m.guest){
+    html += `<h2>👫 친구를 기다리는 중</h2><p class="count">친구에게 이 방 번호를 알려 주세요. 친구가 "친구 방에 들어가기"에 입력하면 바로 시작돼요.</p>
+      <div class="bigcode">${PR.code}</div><p class="count"><span class="thinking">기다리는 중...</span></p>`;
+  } else {
+    const opp = m.host === me ? m.guest : m.host;
+    html += `<h2>👫 친구랑 연습 · 방 ${PR.code}</h2>
+      <div class="vsbig" style="font-size:30px">${esc(me)} <span class="bigscore">${sc(me)} : ${sc(opp)}</span> ${esc(opp)}</div>`;
+    if(g && g.status === 'playing') html += `<button class="big" id="prBack">⚫ 대국으로 돌아가기 (${g.round || 1}번째 판)</button>`;
+    else html += `<button class="big" id="prAgain">🔁 한 판 더 (흑백 바꾸기)</button><p class="count">둘 중 누가 눌러도 함께 시작돼요</p>`;
+  }
+  html += `<div class="row" style="justify-content:center;margin-top:20px"><button class="ghost sm" id="prHelp">❓ 규칙</button><button class="ghost sm" id="prLeave">🚪 방 나가기</button></div></div>`;
+  $('practiceView').innerHTML = html;
+  const b = $('prBack'); if(b) b.onclick = () => { delete net.dismissed[g.key + g.startedAt]; openOnline('p'); };
+  const a = $('prAgain'); if(a) a.onclick = () => { a.disabled = true; practiceNewGame(false); };
+  $('prHelp').onclick = helpBox;
+  $('prLeave').onclick = leavePractice;
+}
+function leavePractice(){
+  confirmBox('방에서 나갈까요?', PR.meta && PR.meta.host === net.me ? '방을 만든 사람이 나가면 방이 닫혀요.' : '친구 혼자 남게 돼요.', async () => {
+    const m = PR.meta, path = roomPath('');
+    closeOnline(true); const me = net.me; netStop();
+    if(m && m.host === me) await DB.remove(path.replace(/\/$/, ''));
+    else await DB.transaction(path + 'meta', cur => { if(!cur) return undefined; const x = JSON.parse(cur); if(x.guest === me) x.guest = null; return JSON.stringify(x); });
+    practiceHome();
+  }, '나가기');
+}
+
+/* ================= 처음 화면 · 뒤로 가기 ================= */
+function setMode(m){ sstore.set('omok_mode', m); }
+function showHome(){
+  closeOnline(true); clearInterval(timerIv); clearTimeout(aiTimer); G = null;
+  if(net.role === 'student' || net.role === 'practice'){ netStop(); net.role = null; }
+  setMode('home'); show('homeView');
+}
+function enterTeacher(){
+  setMode('teacher');
+  if(net.role !== 'host'){ netStop(); net.role = null; }
+  T = store.get('omok_tournament');
+  if(T && !('stage' in T)){ T.stage = 'main'; T.groups = null; T.third = null; T.lots = {}; T.seq = 0; T.players.forEach(p => T.lots[p] = Math.random()); }
+  if(T){ applySettings(T.settings); $('tName').value = T.name; show('bracketView'); if(T.online && net.role !== 'host') hostConnect(); }
+  else show('setupView');
+  const sg = store.get('omok_game');
+  if(sg && !sg.over && sg.moves){
+    let valid = true;
+    if(sg.ref){ try{ valid = !!(T && !getMatch(sg.ref).winner); }catch(e){ valid = false; } }
+    if(valid){
+      openModal(`<h2>두던 대국이 있어요</h2><div class="vsbig">⚫ ${esc(sg.names[1])} <span class="v">VS</span> ⚪ ${esc(sg.names[2])}</div><p>${sg.moves.length}수까지 두었어요. 이어서 둘까요?</p>
+        <div class="pickrow"><button class="ghost" id="mNo">버리기</button><button id="mYes">이어서 두기</button></div>`);
+      $('mNo').onclick = () => { clearGame(); closeModal(); };
+      $('mYes').onclick = () => { closeModal(); resumeGame(sg); };
+    } else clearGame();
+  }
+}
+function afterLocalGame(){
+  const md = sstore.get('omok_mode');
+  if(md === 'teacher') show(T ? 'bracketView' : 'setupView'); else showHome();
+}
+function visible(id){ return !$(id).classList.contains('hidden'); }
+// 뒤로 가기를 앱 안에서 처리 (true = 처리함)
+function handleBack(){
+  if(modalOpen()){ closeModal(); return true; }
+  if(visible('gameView')){
+    if(OG){ closeOnline(); return true; }
+    if(G){ $('btnLeave').click(); return true; }
+    showHome(); return true;
+  }
+  if(visible('bracketView')){ if(net.role === 'student'){ show('studentView'); renderStudent(); } else showHome(); return true; }
+  if(visible('setupView')){ showHome(); return true; }
+  if(visible('practiceView')){ if(net.role === 'practice'){ leavePractice(); } else showHome(); return true; }
+  if(visible('studentView')){ if(net.role === 'student') return false; showHome(); return true; }
+  return false; // 처음 화면 · 학생 내 화면
+}
+let backArmed = false, lastBackAt = 0;
+function armBack(){ try{ history.pushState({omok: Date.now()}, ''); backArmed = true; }catch(e){} }
+document.addEventListener('pointerdown', () => { if(!backArmed) armBack(); }, true);
+window.addEventListener('popstate', () => {
+  if(!backArmed) return;
+  backArmed = false;
+  if(handleBack()){ armBack(); return; }
+  const now = Date.now();
+  if(now - lastBackAt < 2000){ history.back(); return; }
+  lastBackAt = now; toast('한 번 더 누르면 나가요'); armBack();
+});
+
 /* ================= 시작 ================= */
 const savedNames = store.get('omok_names'); if(savedNames) $('names').value = savedNames;
 updateCount();
-T = store.get('omok_tournament');
-// 이전 버전 대회 데이터 호환
-if(T && !('stage' in T)){ T.stage = 'main'; T.groups = null; T.third = null; T.lots = {}; T.seq = 0; T.players.forEach(p => T.lots[p] = Math.random()); }
+$('hTeacher').onclick = enterTeacher;
+$('hStudent').onclick = () => renderJoin('');
+$('hFriend').onclick = practiceHome;
+$('hLocal').onclick = () => { setMode('home'); $('btnPractice').click(); };
+$('hAI').onclick = () => { setMode('home'); $('btnAI').click(); };
+$('hHelp').onclick = helpBox;
+// 새로고침(또는 앞/뒤 이동)일 때만 하던 화면을 이어서 보여 주고,
+// 링크를 새로 열면 항상 처음 화면에서 시작해요.
+let navType = 'navigate';
+try{ const e = performance.getEntriesByType('navigation')[0]; if(e) navType = e.type; }catch(e){}
+const isReload = navType === 'reload' || navType === 'back_forward';
 let roomQ = null; try{ roomQ = new URLSearchParams(location.search).get('room'); }catch(e){}
-const role = sstore.get('omok_role');
-if(roomQ || (role && role.role === 'student')){
-  // 학생 태블릿
-  T = null;
-  if(role && role.role === 'student' && (!roomQ || roomQ === role.code)){ show('studentView'); $('studentView').innerHTML = '<p class="legend" style="text-align:center">연결하는 중...</p>'; enterAs(role.code, role.name); }
-  else renderJoin(roomQ || '');
-} else {
-  if(T){ applySettings(T.settings); $('tName').value = T.name; show('bracketView'); if(T.online) hostConnect(); }
-  else show('setupView');
+const mode0 = sstore.get('omok_mode'), role0 = sstore.get('omok_role'), prc0 = sstore.get('omok_practice');
+if(roomQ){
+  if(isReload && role0 && role0.code === roomQ) enterAs(role0.code, role0.name);
+  else renderJoin(roomQ, role0 && role0.code === roomQ ? role0.name : null);
 }
-const sg = store.get('omok_game');
-if(sg && !sg.over && sg.moves && net.role !== 'student' && !roomQ){
-  let valid = true;
-  if(sg.ref){ try{ valid = !!(T && !getMatch(sg.ref).winner); }catch(e){ valid = false; } }
-  if(valid){
-    openModal(`<h2>두던 대국이 있어요</h2><div class="vsbig">⚫ ${esc(sg.names[1])} <span class="v">VS</span> ⚪ ${esc(sg.names[2])}</div><p>${sg.moves.length}수까지 두었어요. 이어서 둘까요?</p>
-      <div class="pickrow"><button class="ghost" id="mNo">버리기</button><button id="mYes">이어서 두기</button></div>`);
-    $('mNo').onclick = () => { clearGame(); closeModal(); };
-    $('mYes').onclick = () => { closeModal(); resumeGame(sg); };
-  } else clearGame();
-}
+else if(isReload && mode0 === 'student' && role0) enterAs(role0.code, role0.name);
+else if(isReload && mode0 === 'practice' && prc0) enterPractice(prc0.code, prc0.name);
+else if(isReload && mode0 === 'practice-home') practiceHome();
+else if(isReload && mode0 === 'join') renderJoin('');
+else if(isReload && mode0 === 'teacher') enterTeacher();
+else showHome();
 })();
 </script>
 </body>
