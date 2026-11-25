@@ -553,6 +553,173 @@ function aiPick(g, N, me, level, rules){
   return [p.x, p.y];
 }
 
+/* ===== 강한 컴퓨터 (어려움·중 / 어려움·고) ===== */
+const AI2 = (() => {
+  const WIN = 1e7;
+  const SC = [0, 1, 12, 150, 2000, WIN];
+  function nearCells(g, N, dist){
+    const out = [], seen = new Uint8Array(N * N);
+    for(let y = 0; y < N; y++) for(let x = 0; x < N; x++){
+      if(!g[y][x]) continue;
+      for(let dy = -dist; dy <= dist; dy++) for(let dx = -dist; dx <= dist; dx++){
+        const nx = x + dx, ny = y + dy;
+        if(nx < 0 || ny < 0 || nx >= N || ny >= N || g[ny][nx] || seen[ny * N + nx]) continue;
+        seen[ny * N + nx] = 1; out.push([nx, ny]);
+      }
+    }
+    return out;
+  }
+  function lenIf(g, N, x, y, dx, dy, c){
+    let a = 0, b = 0;
+    while(at(g, N, x + dx*(a+1), y + dy*(a+1)) === c) a++;
+    while(at(g, N, x - dx*(b+1), y - dy*(b+1)) === c) b++;
+    return a + b + 1;
+  }
+  function makesFive(g, N, x, y, c){ for(const [dx, dy] of DIRS) if(lenIf(g, N, x, y, dx, dy, c) >= 5) return true; return false; }
+  function fivePts(g, N, c, list){ const out = []; for(const p of list){ if(!g[p[1]][p[0]] && makesFive(g, N, p[0], p[1], c)) out.push(p); } return out; }
+  // 판 전체 평가 (me 입장)
+  function evalBoard(g, N, me){
+    const opp = 3 - me; let s = 0;
+    for(const [dx, dy] of DIRS){
+      for(let y = 0; y < N; y++) for(let x = 0; x < N; x++){
+        const ex = x + dx * 4, ey = y + dy * 4;
+        if(ex < 0 || ey < 0 || ex >= N || ey >= N) continue;
+        let a = 0, b = 0;
+        for(let k = 0; k < 5; k++){ const v = g[y + dy*k][x + dx*k]; if(v === me) a++; else if(v === opp) b++; }
+        if(a && !b) s += SC[a]; else if(b && !a) s -= SC[b] * 1.15;
+      }
+    }
+    return s;
+  }
+  function moveScore(g, N, x, y, me){ return lineScore(g, N, x, y, me) + lineScore(g, N, x, y, 3 - me) * 0.9; }
+  function ordered(g, N, me, list, K, rules, checkRules){
+    const arr = [];
+    for(const [x, y] of list){
+      if(checkRules && (rules.no33 || rules.no44)){ const j = judge(g, N, x, y, me, rules); if(j === '33' || j === '44') continue; }
+      arr.push({x, y, s: moveScore(g, N, x, y, me)});
+    }
+    arr.sort((a, b) => b.s - a.s);
+    return arr.slice(0, K);
+  }
+  // 연속 4로 이기는 수순(VCF) 찾기
+  function vcf(g, N, me, depth, rules, deadline){
+    if(depth <= 0 || Date.now() > deadline) return null;
+    const opp = 3 - me, list = nearCells(g, N, 2);
+    if(fivePts(g, N, opp, list).length) return null; // 상대가 먼저 이길 수 있으면 안 됨
+    for(const [x, y] of list){
+      if(g[y][x]) continue;
+      // 4를 만드는 수만
+      let four = false;
+      g[y][x] = me;
+      for(const [dx, dy] of DIRS){ if(hasFour(g, N, x, y, dx, dy, me)){ four = true; break; } }
+      g[y][x] = 0;
+      if(!four) continue;
+      if(rules.no33 || rules.no44){ const j = judge(g, N, x, y, me, rules); if(j === '33' || j === '44') continue; if(j === 'five') return [[x, y]]; }
+      else if(makesFive(g, N, x, y, me)) return [[x, y]];
+      g[y][x] = me;
+      const pts = fivePts(g, N, me, nearCells(g, N, 1));
+      let res = null;
+      if(pts.length >= 2) res = [[x, y]];
+      else if(pts.length === 1){
+        const [bx, by] = pts[0];
+        g[by][bx] = opp;
+        if(!fivePts(g, N, opp, nearCells(g, N, 1)).length){ const r = vcf(g, N, me, depth - 1, rules, deadline); if(r) res = [[x, y]].concat(r); }
+        g[by][bx] = 0;
+      }
+      g[y][x] = 0;
+      if(res) return res;
+    }
+    return null;
+  }
+  let deadline = 0, aborted = false, nodes = 0;
+  const KS = [12, 9, 7, 6, 5, 5, 4, 4];
+  function negamax(g, N, me, depth, alpha, beta, ply, rules){
+    if((++nodes & 255) === 0 && Date.now() > deadline){ aborted = true; return 0; }
+    const opp = 3 - me, list = nearCells(g, N, ply > 2 ? 1 : 2);
+    if(!list.length) return 0;
+    if(fivePts(g, N, me, list).length) return WIN - ply;
+    const oppF = fivePts(g, N, opp, list);
+    if(oppF.length >= 2) return -WIN + ply;
+    if(depth <= 0) return evalBoard(g, N, me);
+    let moves;
+    if(oppF.length === 1) moves = [{x: oppF[0][0], y: oppF[0][1]}];
+    else moves = ordered(g, N, me, list, KS[Math.min(ply, KS.length - 1)], rules, ply === 0);
+    let best = -Infinity;
+    for(const m of moves){
+      g[m.y][m.x] = me;
+      const v = -negamax(g, N, opp, depth - 1, -beta, -alpha, ply + 1, rules);
+      g[m.y][m.x] = 0;
+      if(aborted) return 0;
+      if(v > best) best = v;
+      if(v > alpha) alpha = v;
+      if(alpha >= beta) break;
+    }
+    return best === -Infinity ? evalBoard(g, N, me) : best;
+  }
+  function rootSearch(g, N, me, maxDepth, ms, rules, restrict){
+    const start = Date.now(); deadline = start + ms;
+    const list = nearCells(g, N, 2);
+    let rootMoves = restrict || ordered(g, N, me, list, KS[0], rules, true);
+    if(!rootMoves.length) return null;
+    let bestMove = rootMoves[0];
+    for(let d = 1; d <= maxDepth; d++){
+      aborted = false; nodes = 0;
+      let alpha = -Infinity, curBest = null, scored = [];
+      for(const m of rootMoves){
+        g[m.y][m.x] = me;
+        const v = -negamax(g, N, 3 - me, d - 1, -Infinity, -alpha, 1, rules);
+        g[m.y][m.x] = 0;
+        if(aborted) break;
+        scored.push({m, v});
+        if(!curBest || v > curBest.v) curBest = {m, v};
+        if(v > alpha) alpha = v;
+      }
+      if(aborted) break;
+      bestMove = curBest.m;
+      // 다음 깊이에서 좋은 수부터 보도록 정렬
+      scored.sort((a, b) => b.v - a.v); rootMoves = scored.map(s => s.m);
+      if(curBest.v >= WIN - 50) break;
+      if(Date.now() - start > ms * 0.45) break;
+    }
+    return [bestMove.x, bestMove.y];
+  }
+  const LV = {
+    mid:  { vcf: 7,  oppVcf: 5, depth: 3, ms: 700 },   // 어려움·중 (1급 수준 목표)
+    high: { vcf: 12, oppVcf: 9, depth: 6, ms: 1400 }   // 어려움·고 (1단 수준 목표)
+  };
+  function pick(g, N, me, level, rules){
+    const P = LV[level], opp = 3 - me;
+    const c = Math.floor(N / 2);
+    let any = false; for(const row of g) if(row.some(v => v)) { any = true; break; }
+    if(!any) return [c, c];
+    const list = nearCells(g, N, 2);
+    const legal = ([x, y]) => { if(!(rules.no33 || rules.no44)) return true; const j = judge(g, N, x, y, me, rules); return j !== '33' && j !== '44'; };
+    // 1) 바로 이기기  2) 상대 5 막기
+    const mine = fivePts(g, N, me, list).filter(legal); if(mine.length) return mine[0];
+    const theirs = fivePts(g, N, opp, list); if(theirs.length){ const l = theirs.filter(legal); return l[0] || theirs[0]; }
+    // 3) 내 연속 4 필승 수순
+    const t0 = Date.now(), myV = vcf(g, N, me, P.vcf, rules, t0 + P.ms * 0.35);
+    if(myV) return myV[0];
+    // 4) 상대의 연속 4 필승 수순이 있으면 그것을 깨는 수만 고려
+    let restrict = null;
+    const oppV = vcf(g, N, opp, P.oppVcf, rules, Date.now() + P.ms * 0.2);
+    if(oppV){
+      const cand = ordered(g, N, me, list, 14, rules, true), ok = [];
+      const dl = Date.now() + P.ms * 0.25;
+      for(const m of cand){
+        g[m.y][m.x] = me;
+        const still = vcf(g, N, opp, P.oppVcf, rules, dl);
+        g[m.y][m.x] = 0;
+        if(!still) ok.push(m);
+        if(Date.now() > dl) break;
+      }
+      if(ok.length) restrict = ok;
+    }
+    return rootSearch(g, N, me, P.depth, P.ms, rules, restrict) || aiPick(g, N, me, 'hard', rules);
+  }
+  return { pick };
+})();
+
 /* ================= 판 그리기 ================= */
 function drawBoard(cv, st){
   const ctx = cv.getContext('2d'), S = cv.width, N = st.N, pad = S * 0.055, cell = (S - pad * 2) / (N - 1);
@@ -653,13 +820,14 @@ $('btnPractice').onclick = () => {
 $('btnAI').onclick = () => {
   openModal(`<h2>🤖 컴퓨터와 연습</h2><p>실력을 고르고 내 돌 색을 정해요.</p>
     <div class="row" style="justify-content:center"><input id="pme" value="나" style="width:150px" placeholder="내 이름"></div>
-    <div class="row" style="justify-content:center"><select id="plv"><option value="easy">쉬움 (처음 배우는 친구)</option><option value="normal" selected>보통</option><option value="hard">어려움 (도전!)</option></select></div>
+    <div class="row" style="justify-content:center"><select id="plv"><option value="easy">쉬움 (처음 배우는 친구)</option><option value="normal" selected>보통</option><option value="hard">어려움·초 (3급 수준)</option><option value="mid">어려움·중 (1급 수준)</option><option value="high">어려움·고 (1단 수준)</option></select></div>
+    <p class="count" style="font-size:13px;margin:4px 0 0">어려움·중/고는 몇 수 앞까지 읽어서 한 수에 1~2초 생각해요.</p>
     <div class="row" style="justify-content:center"><select id="pcol"><option value="1">내가 흑 (먼저)</option><option value="2">내가 백 (나중)</option></select></div>
     <div class="pickrow" style="margin-top:14px"><button class="ghost" id="mNo">취소</button><button id="mYes">시작</button></div>`);
   $('mNo').onclick = closeModal;
   $('mYes').onclick = () => {
     const me = $('pme').value.trim() || '나', lv = $('plv').value, col = +$('pcol').value;
-    const lvName = {easy:'쉬움', normal:'보통', hard:'어려움'}[lv], bot = `컴퓨터(${lvName})`;
+    const lvName = {easy:'쉬움', normal:'보통', hard:'어려움·초', mid:'어려움·중', high:'어려움·고'}[lv], bot = `컴퓨터(${lvName})`;
     closeModal();
     const s = readSettings(); s.undo = -1; s.time = 0; s.tap = s.tap;
     startGame({black: col === 1 ? me : bot, white: col === 1 ? bot : me, ref: null, settings: s, ai: {color: 3 - col, level: lv}});
@@ -1180,7 +1348,7 @@ function maybeAI(){
   updateGameUI();
   aiTimer = setTimeout(() => {
     if(!isAITurn() || G.paused) return;
-    const p = aiPick(G.grid, G.N, G.turn, G.ai.level, G.settings);
+    const lv = G.ai.level, p = (lv === 'mid' || lv === 'high') ? AI2.pick(G.grid, G.N, G.turn, lv, G.settings) : aiPick(G.grid, G.N, G.turn, lv, G.settings);
     if(p) place(p[0], p[1]);
   }, 500 + Math.random() * 400);
 }
